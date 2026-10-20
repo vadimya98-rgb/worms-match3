@@ -188,10 +188,11 @@ export default class FarmScene extends Phaser.Scene {
     btn.add([bg, this.add.text(0, 0, 'ЗАБРАТЬ', { fontSize: '36px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 5 }).setOrigin(0.5)]);
     btn.setSize(300, 80).setInteractive();
     
-    // ИСПРАВЛЕНО: Переход на главный экран
-    btn.on('pointerdown', () => { 
-        console.log("Переход в HubScene"); // Для отладки
-        this.scene.start('HubScene'); 
+    // Исправление: используем pointerup и задержку, чтобы клик не проваливался в меню
+    btn.on('pointerup', () => { 
+        this.time.delayedCall(100, () => {
+            this.scene.start('HubScene'); 
+        });
     });
   }
 
