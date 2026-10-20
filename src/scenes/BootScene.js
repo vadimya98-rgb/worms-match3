@@ -23,9 +23,9 @@ export default class BootScene extends Phaser.Scene {
     this.load.image('robot', 'assets/rasa/robot.png');
     this.load.image('zombie', 'assets/rasa/zombie.png');
 
-    // НОВЫЕ ИКОНКИ
+    // ИСПРАВЛЕНО: aptecka.png
     this.load.image('icon_fuz', 'assets/fuz.png');
-    this.load.image('icon_medkit', 'assets/aptechka.png');
+    this.load.image('icon_medkit', 'assets/aptecka.png'); 
     this.load.image('icon_antitoksin', 'assets/antitoksin.png');
   }
 
