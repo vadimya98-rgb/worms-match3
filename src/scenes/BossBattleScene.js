@@ -236,12 +236,34 @@ export default class BossBattleScene extends Phaser.Scene {
   removeTiles(tiles) {
     const weapon = WEAPONS[tiles[0].colorIndex];
     
+    // МНОЖИТЕЛЬ УРОНА ЗА КОМБО (4 в ряд = 1.5х, 5 в ряд = 2х)
+    let comboMult = 1;
+    if (tiles.length === 4) comboMult = 1.5;
+    if (tiles.length >= 5) comboMult = 2;
+
     this.shootProjectile(tiles[0].colorIndex, tiles[0].x, tiles[0].y, this.bossSprite.x, this.bossSprite.y, () => {
-        let dmgHp = weapon.damage, dmgArmor = 0;
-        if (weapon.armorPierce > 0 && this.bossArmor > 0) { dmgArmor = weapon.armorPierce; dmgHp = 0; }
-        else if (this.bossArmor > 0) { dmgArmor = weapon.damage; dmgHp = 0; }
-        if (dmgArmor > 0) this.bossArmor = Math.max(0, this.bossArmor - dmgArmor);
-        if (dmgHp > 0) this.bossHp = Math.max(0, this.bossHp - dmgHp);
+        let dmgHp = Math.floor(weapon.damage * comboMult);
+        let dmgArmor = 0;
+
+        if (weapon.armorPierce > 0 && this.bossArmor > 0) { 
+            dmgArmor = weapon.armorPierce * comboMult; 
+            dmgHp = 0; 
+        } else if (this.bossArmor > 0) { 
+            dmgArmor = weapon.damage * comboMult; 
+            dmgHp = 0; 
+        }
+
+        // Вывод урона по броне
+        if (dmgArmor > 0) {
+            this.bossArmor = Math.max(0, this.bossArmor - dmgArmor);
+            this.showFloatingText(this.bossSprite.x, this.bossSprite.y - 50, `-${dmgArmor} БР.`, '#3498db');
+        }
+        // Вывод урона по ХП
+        if (dmgHp > 0) {
+            this.bossHp = Math.max(0, this.bossHp - dmgHp);
+            this.showFloatingText(this.bossSprite.x, this.bossSprite.y - 50, `-${dmgHp}`, '#ff3333');
+        }
+        
         this.updateBossHpUI();
         
         if (weapon.stun) {
@@ -285,26 +307,20 @@ export default class BossBattleScene extends Phaser.Scene {
       this.tweens.addCounter({ from: 0, to: 1, duration: 2000, ease: 'Linear', onUpdate: (tw) => { let t = tw.getValue(); let radius = 150 * (1 - t); proj.x = Phaser.Math.Linear(sx, tx, t) + Math.sin(t * Math.PI * 10) * radius; proj.y = Phaser.Math.Linear(sy, ty, t) + Math.cos(t * Math.PI * 10) * radius; proj.angle += 10; }, onComplete: () => { proj.destroy(); onComplete(); } });
     } else if (wId === 1) { 
       proj = this.add.image(sx, sy, 'weapon1').setDisplaySize(30, 30).setDepth(150);
-      this.tweens.addCounter({ from: 0, to: 1, duration: 1500, ease: 'Linear', onUpdate: (tw) => { let t = tw.getValue(); proj.x = Phaser.Math.Linear(sx, tx, t); proj.y = Phaser.Math.Linear(sy, ty, t) - Math.sin(t * Math.PI) * 150; proj.angle += 10; }, onComplete: () => { proj.destroy(); this.spawnSparks(tx, ty, 0xffaa00); onComplete(); } });
+      this.tweens.addCounter({ from: 0, to: 1, duration: 1500, ease: 'Linear', onUpdate: (tw) => { let t = tw.getValue(); proj.x = Phaser.Math.Linear(sx, tx, t); proj.y = Phaser.Math.Linear(sy, ty, t) - Math.sin(t * Math.PI) * 150; proj.angle += 10; }, onComplete: () => { proj.destroy(); onComplete(); } });
     } else if (wId === 2) {
       proj = this.add.image(tx + 50, ty + 50, 'weapon2').setDisplaySize(50, 50).setDepth(150).setAlpha(0);
-      this.tweens.add({ targets: proj, alpha: 1, duration: 500, onComplete: () => { this.time.delayedCall(1000, () => { proj.destroy(); this.spawnSparks(tx, ty, 0xff5500); let targetSprite = (sx === this.bossSprite.x) ? this.bossSprite : this.charContainers.find(c=>c.type==='Image'); if(targetSprite && targetSprite.y) { this.tweens.add({ targets: targetSprite, y: targetSprite.y - 60, duration: 200, yoyo: true, ease: 'Quad.easeOut', onComplete: onComplete }); } else { onComplete(); } }); }});
+      this.tweens.add({ targets: proj, alpha: 1, duration: 500, onComplete: () => { this.time.delayedCall(1000, () => { proj.destroy(); let targetSprite = (sx === this.bossSprite.x) ? this.bossSprite : this.charContainers.find(c=>c.type==='Image'); if(targetSprite && targetSprite.y) { this.tweens.add({ targets: targetSprite, y: targetSprite.y - 60, duration: 200, yoyo: true, ease: 'Quad.easeOut', onComplete: onComplete }); } else { onComplete(); } }); }});
     } else if (wId === 3) { 
       proj = this.add.image(sx, sy, 'weapon3').setDisplaySize(35, 35).setDepth(150);
-      this.tweens.addCounter({ from: 0, to: 1, duration: 1800, ease: 'Linear', onUpdate: (tw) => { let t = tw.getValue(); proj.x = Phaser.Math.Linear(sx, tx, t) + Math.sin(t * Math.PI * 8) * 100; proj.y = Phaser.Math.Linear(sy, ty, t) - Math.cos(t * Math.PI * 8) * 100; proj.angle += 20; }, onComplete: () => { proj.destroy(); this.spawnSparks(tx, ty, 0xff00ff); onComplete(); } });
+      this.tweens.addCounter({ from: 0, to: 1, duration: 1800, ease: 'Linear', onUpdate: (tw) => { let t = tw.getValue(); proj.x = Phaser.Math.Linear(sx, tx, t) + Math.sin(t * Math.PI * 8) * 100; proj.y = Phaser.Math.Linear(sy, ty, t) - Math.cos(t * Math.PI * 8) * 100; proj.angle += 20; }, onComplete: () => { proj.destroy(); onComplete(); } });
     } else if (wId === 4) { 
       proj = this.add.image(tx - 50, ty + 50, 'weapon4').setDisplaySize(40, 40).setDepth(150).setAlpha(0);
-      this.tweens.add({ targets: proj, alpha: 1, duration: 500, onComplete: () => { this.time.delayedCall(1000, () => { proj.destroy(); this.spawnSparks(tx, ty, 0xff0000); let targetSprite = (sx === this.bossSprite.x) ? this.bossSprite : this.charContainers.find(c=>c.type==='Image'); if(targetSprite && targetSprite.x) { this.tweens.add({ targets: targetSprite, x: targetSprite.x + 60, duration: 150, yoyo: true, ease: 'Quad.easeOut', onComplete: onComplete }); } else { onComplete(); } }); }});
+      this.tweens.add({ targets: proj, alpha: 1, duration: 500, onComplete: () => { this.time.delayedCall(1000, () => { proj.destroy(); let targetSprite = (sx === this.bossSprite.x) ? this.bossSprite : this.charContainers.find(c=>c.type==='Image'); if(targetSprite && targetSprite.x) { this.tweens.add({ targets: targetSprite, x: targetSprite.x + 60, duration: 150, yoyo: true, ease: 'Quad.easeOut', onComplete: onComplete }); } else { onComplete(); } }); }});
     } else { 
       proj = this.add.image(tx + 50, ty + 50, 'weapon5').setDisplaySize(40, 40).setDepth(150).setAlpha(0);
-      this.tweens.add({ targets: proj, alpha: 1, duration: 500, onComplete: () => { this.time.delayedCall(1000, () => { proj.destroy(); this.spawnSparks(tx, ty, 0x00ffff); this.cameras.main.flash(500, 0, 255, 255); onComplete(); }); }});
+      this.tweens.add({ targets: proj, alpha: 1, duration: 500, onComplete: () => { this.time.delayedCall(1000, () => { proj.destroy(); this.cameras.main.flash(500, 0, 255, 255); onComplete(); }); }});
     }
-  }
-
-  spawnSparks(x, y, color) {
-    let emitter = this.add.particles(x, y, 'white_pixel', { speed: { min: 150, max: 400 }, angle: { min: 0, max: 360 }, scale: { start: 1.5, end: 0 }, lifespan: 1000, quantity: 20, tint: color, blendMode: 'ADD' }).setDepth(160);
-    let blood = this.add.particles(x, y, 'white_pixel', { speed: { min: 50, max: 150 }, angle: { min: 45, max: 135 }, gravityY: 800, scale: { start: 0.8, end: 0.2 }, alpha: { start: 1, end: 0 }, lifespan: 1500, quantity: 15, tint: 0xff0000 }).setDepth(159);
-    this.time.delayedCall(1500, () => { emitter.destroy(); blood.destroy(); });
   }
 
   hitBoss() {
@@ -367,120 +383,76 @@ export default class BossBattleScene extends Phaser.Scene {
     const sx = 360;
     const sy = 1060;
 
-    let dmg = 70; 
+    // Урон от ульты зависит от базового урона оружия
+    let dmg = 150; 
     this.bossHp = Math.max(0, this.bossHp - dmg); 
     this.updateBossHpUI();
-    this.showFloatingText(ex, ey - 50, 'УДАР!', '#f1c40f');
+    this.showFloatingText(ex, ey - 50, `-${dmg}`, '#ffaa00');
 
     if (activeChar.id === 'dragon') {
-        // ДРАКОН: Летит иконка огонька
         let fire = this.add.text(sx, sy, '🔥', { fontSize: '50px' }).setDepth(150);
         this.tweens.add({
             targets: fire, x: ex, y: ey, duration: 1000, ease: 'Power2',
             onComplete: () => {
-                fire.destroy();
-                this.hitBoss();
-                this.bossSprite.setTint(0xff5500); // Босс краснеет
+                fire.destroy(); this.hitBoss(); this.bossSprite.setTint(0xff5500);
                 this.time.delayedCall(1000, () => { this.bossSprite.clearTint(); this.endCounterAttack(); });
             }
         });
-
     } else if (activeChar.id === 'cat') {
-        // КОТ: Три красные полоски прямо на боссе
         this.cameras.main.flash(200, 255, 255, 255);
-        
         let scratch = this.add.graphics().setDepth(160);
-        scratch.lineStyle(8, 0xff0000, 1); // Красные линии
+        scratch.lineStyle(8, 0xff0000, 1);
         scratch.lineBetween(ex - 40, ey - 40, ex + 40, ey + 40);
         scratch.lineBetween(ex - 20, ey - 50, ex + 60, ey + 30);
         scratch.lineBetween(ex - 60, ey - 30, ex + 20, ey + 50);
-
         this.bossSprite.setTint(0xff0000);
-        
-        this.time.delayedCall(300, () => {
-            this.hitBoss();
-            this.tweens.add({ targets: scratch, alpha: 0, duration: 1000, onComplete: () => { scratch.destroy(); this.bossSprite.clearTint(); this.endCounterAttack(); } });
-        });
-
+        this.time.delayedCall(300, () => { this.hitBoss(); this.tweens.add({ targets: scratch, alpha: 0, duration: 1000, onComplete: () => { scratch.destroy(); this.bossSprite.clearTint(); this.endCounterAttack(); } }); });
     } else if (activeChar.id === 'robot') {
-        // РОБОТ: Зигзаг (молния) от робота к боссу
         this.cameras.main.flash(300, 0, 255, 255);
-
         let lightning = this.add.graphics().setDepth(160);
         lightning.lineStyle(6, 0x00ffff, 1);
         lightning.beginPath();
         lightning.moveTo(sx, sy);
-        for(let i=1; i<=6; i++) {
-            lightning.lineTo(Phaser.Math.Linear(sx, ex, i/6) + Phaser.Math.Between(-40, 40), Phaser.Math.Linear(sy, ey, i/6));
-        }
+        for(let i=1; i<=6; i++) lightning.lineTo(Phaser.Math.Linear(sx, ex, i/6) + Phaser.Math.Between(-40, 40), Phaser.Math.Linear(sy, ey, i/6));
         lightning.strokePath();
-
         this.bossSprite.setTint(0x00ffff);
-
-        this.time.delayedCall(400, () => {
-            lightning.destroy();
-            this.hitBoss();
-            this.tweens.add({ targets: this.bossSprite, alpha: 0.5, duration: 100, yoyo: true, repeat: 3, onComplete: () => {
-                this.bossSprite.setAlpha(1);
-                this.bossSprite.clearTint();
-                this.endCounterAttack();
-            }});
-        });
-
+        this.time.delayedCall(400, () => { lightning.destroy(); this.hitBoss(); this.tweens.add({ targets: this.bossSprite, alpha: 0.5, duration: 100, yoyo: true, repeat: 3, onComplete: () => { this.bossSprite.setAlpha(1); this.bossSprite.clearTint(); this.endCounterAttack(); } }); });
     } else if (activeChar.id === 'zombie') {
-        // ЗОМБИ: Зеленый круг на боссе (пульсирует)
         let poison = this.add.circle(ex, ey, 80, 0x00ff00, 0.6).setDepth(160);
-        
-        this.tweens.add({
-            targets: poison,
-            alpha: 0.1,
-            yoyo: true,
-            repeat: 4,
-            duration: 300,
-            onComplete: () => {
-                poison.destroy();
-                this.hitBoss();
-                this.bossSprite.setTint(0x00ff00);
-                this.time.delayedCall(1000, () => { this.bossSprite.clearTint(); this.endCounterAttack(); });
-            }
-        });
+        this.tweens.add({ targets: poison, alpha: 0.1, yoyo: true, repeat: 4, duration: 300, onComplete: () => { poison.destroy(); this.hitBoss(); this.bossSprite.setTint(0x00ff00); this.time.delayedCall(1000, () => { this.bossSprite.clearTint(); this.endCounterAttack(); }); } });
     }
   }
 
-  endCounterAttack() {
-    this.time.delayedCall(1000, () => { 
-        if (this.bossHp <= 0) this.winGame(); 
-        else this.bossTurn(); 
-    });
-  }
+  endCounterAttack() { this.time.delayedCall(1000, () => { if (this.bossHp <= 0) this.winGame(); else this.bossTurn(); }); }
 
   bossTurn() {
     if (this.isGameOver || this.isPaused) return;
-    
     this.showTurnBanner('ХОД БОССА', 0xe74c3c);
 
     this.time.delayedCall(2000, () => {
-        if (this.poisonTurns > 0) { this.bossHp = Math.max(0, this.bossHp - 20); this.poisonTurns--; this.updateBossHpUI(); this.hitBoss(); }
+        if (this.poisonTurns > 0) { 
+            this.bossHp = Math.max(0, this.bossHp - 50); this.poisonTurns--; 
+            this.updateBossHpUI(); this.hitBoss(); 
+            this.showFloatingText(this.bossSprite.x, this.bossSprite.y - 50, `-50 ЯД`, '#00ff00');
+        }
         
         const bossWeaponId = Phaser.Utils.Array.GetRandom(this.bossData.weapons);
         const bossWeapon = WEAPONS[bossWeaponId];
+        // Босс бьет сильнее в зависимости от уровня
+        let bossDamage = Math.floor(bossWeapon.damage * 1.5 + this.bossData.level * 10); 
 
         this.shootProjectile(bossWeaponId, this.bossSprite.x, this.bossSprite.y, 360, 1060, () => {
             this.cameras.main.shake(200, 0.03);
-            this.spawnSparks(360, 1060, 0xff0000);
             
-            this.team[this.activeCharIndex].hp = Math.max(0, this.team[this.activeCharIndex].hp - bossWeapon.damage);
+            this.team[this.activeCharIndex].hp = Math.max(0, this.team[this.activeCharIndex].hp - bossDamage);
+            this.showFloatingText(360, 1060, `-${bossDamage}`, '#ff0000'); // УРОН ПО ИГРОКУ
             this.renderTeamUI();
             
-            if (bossWeapon.stun) {
-                this.showFloatingText(360, 1060, 'ЗАМОРОЖЕН', '#00ffff');
-            }
+            if (bossWeapon.stun) this.showFloatingText(360, 1060, 'ЗАМОРОЖЕН', '#00ffff');
 
             this.time.delayedCall(1000, () => { 
                 if (this.team[this.activeCharIndex].hp <= 0) this.loseGame(); 
-                else {
-                    this.showTurnBanner('ВАШ ХОД', 0x2ecc71);
-                }
+                else this.showTurnBanner('ВАШ ХОД', 0x2ecc71);
             });
         });
     });
@@ -499,11 +471,11 @@ export default class BossBattleScene extends Phaser.Scene {
     if (this.isBusy || this.isGameOver || this.isPaused) return;
     const target = this.team[this.activeCharIndex];
     if (Save.getMedkits() <= 0 || target.hp <= 0 || target.hp >= target.maxHp) return;
-    target.hp = Math.min(target.maxHp, target.hp + 100);
+    target.hp = Math.min(target.maxHp, target.hp + 300); // Аптечка лечит на 300
     Save.data.player.medkits -= 1; Save.flush();
     this.medkitText.setText(`x${Save.getMedkits()}`);
     this.renderTeamUI();
-    this.showFloatingText(360, 1060, `+100`, '#2ecc71');
+    this.showFloatingText(360, 1060, `+300`, '#2ecc71');
   }
 
   showSurrenderModal() {
@@ -511,59 +483,45 @@ export default class BossBattleScene extends Phaser.Scene {
     const overlay = this.add.rectangle(360, 640, 720, 1280, 0x000000, 0.9).setDepth(300);
     const panel = this.add.graphics().setDepth(301).fillStyle(0x2c3e50, 1).fillRoundedRect(160, 500, 400, 280, 25).lineStyle(4, 0xe74c3c, 1).strokeRoundedRect(160, 500, 400, 280, 25);
     this.add.text(360, 560, 'ВЫ УВЕРЕНЫ?', { fontSize: '32px', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5).setDepth(302);
-    
     const yesBtn = this.add.container(260, 680).setDepth(302);
     const yBg = this.add.graphics().fillStyle(0xe74c3c, 1).fillRoundedRect(-60, -30, 120, 60, 15).lineStyle(3, 0xffffff, 0.8).strokeRoundedRect(-60, -30, 120, 60, 15);
     yesBtn.add([yBg, this.add.text(0, 0, 'ДА', { fontSize: '28px', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5)]);
     yesBtn.setSize(120, 60).setInteractive().on('pointerdown', () => this.scene.start('BossListScene'));
-
     const noBtn = this.add.container(460, 680).setDepth(302);
     const nBg = this.add.graphics().fillStyle(0x2ecc71, 1).fillRoundedRect(-60, -30, 120, 60, 15).lineStyle(3, 0xffffff, 0.8).strokeRoundedRect(-60, -30, 120, 60, 15);
     noBtn.add([nBg, this.add.text(0, 0, 'НЕТ', { fontSize: '28px', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5)]);
-    noBtn.setSize(120, 60).setInteractive().on('pointerdown', () => { 
-        overlay.destroy(); panel.destroy(); 
-        this.children.list.filter(c=>c.depth>=300).forEach(c=>c.destroy()); 
-        this.isPaused = false; 
-    });
+    noBtn.setSize(120, 60).setInteractive().on('pointerdown', () => { overlay.destroy(); panel.destroy(); this.children.list.filter(c=>c.depth>=300).forEach(c=>c.destroy()); this.isPaused = false; });
   }
 
   showFloatingText(x, y, text, color) {
-    const txt = this.add.text(x, y, text, { fontSize: '32px', color, fontStyle: 'bold', stroke: '#000', strokeThickness: 5 }).setOrigin(0.5).setDepth(160);
-    this.tweens.add({ targets: txt, y: y - 80, alpha: 0, duration: 1500, onComplete: () => txt.destroy() });
+    const txt = this.add.text(x + Phaser.Math.Between(-20, 20), y + Phaser.Math.Between(-10, 10), text, { 
+        fontSize: '36px', color, fontStyle: 'bold', stroke: '#000', strokeThickness: 6 
+    }).setOrigin(0.5).setDepth(250);
+    this.tweens.add({ targets: txt, y: y - 100, alpha: 0, scale: 1.2, duration: 1500, onComplete: () => txt.destroy() });
   }
 
   winGame() {
-    if (this.isGameOver) return;
-    this.isGameOver = true;
-    Save.data.bosses[this.bossData.id] = 'defeated';
-    Save.addFuzz(this.bossData.reward);
-
+    if (this.isGameOver) return; this.isGameOver = true;
+    Save.data.bosses[this.bossData.id] = 'defeated'; Save.addFuzz(this.bossData.reward);
     this.add.rectangle(360, 640, 720, 1280, 0x000000, 0.85).setDepth(100);
-    const panel = this.add.graphics().setDepth(101).fillStyle(0x2c3e50, 0.95).fillRoundedRect(160, 440, 400, 400, 30).lineStyle(4, 0x2ecc71, 1).strokeRoundedRect(160, 440, 400, 400, 30);
-    
+    this.add.graphics().setDepth(101).fillStyle(0x2c3e50, 0.95).fillRoundedRect(160, 440, 400, 400, 30).lineStyle(4, 0x2ecc71, 1).strokeRoundedRect(160, 440, 400, 400, 30);
     this.add.text(360, 520, 'ПОБЕДА!', { fontSize: '56px', color: '#2ecc71', fontStyle: 'bold', stroke: '#000', strokeThickness: 6 }).setOrigin(0.5).setDepth(102);
     this.add.text(360, 620, `Награда: ${this.bossData.reward} Фузов`, { fontSize: '32px', color: '#f1c40f', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5).setDepth(102);
-
     const btn = this.add.container(360, 740).setDepth(102);
     const bg = this.add.graphics().fillStyle(0x2ecc71, 1).fillRoundedRect(-150, -40, 300, 80, 30).lineStyle(6, 0xffffff, 1).strokeRoundedRect(-150, -40, 300, 80, 30);
     btn.add([bg, this.add.text(0, 0, 'ЗАБРАТЬ', { fontSize: '36px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 5 }).setOrigin(0.5)]);
-    btn.setSize(300, 80).setInteractive();
-    btn.on('pointerup', () => this.time.delayedCall(100, () => this.scene.start('BossListScene')));
+    btn.setSize(300, 80).setInteractive(); btn.on('pointerup', () => this.time.delayedCall(100, () => this.scene.start('BossListScene')));
   }
 
   loseGame() {
-    if (this.isGameOver) return;
-    this.isGameOver = true;
+    if (this.isGameOver) return; this.isGameOver = true;
     this.add.rectangle(360, 640, 720, 1280, 0x000000, 0.85).setDepth(100);
-    const panel = this.add.graphics().setDepth(101).fillStyle(0x2c3e50, 0.95).fillRoundedRect(160, 440, 400, 400, 30).lineStyle(4, 0xe74c3c, 1).strokeRoundedRect(160, 440, 400, 400, 30);
-    
+    this.add.graphics().setDepth(101).fillStyle(0x2c3e50, 0.95).fillRoundedRect(160, 440, 400, 400, 30).lineStyle(4, 0xe74c3c, 1).strokeRoundedRect(160, 440, 400, 400, 30);
     this.add.text(360, 520, 'ПОРАЖЕНИЕ', { fontSize: '56px', color: '#e74c3c', fontStyle: 'bold', stroke: '#000', strokeThickness: 6 }).setOrigin(0.5).setDepth(102);
     this.add.text(360, 620, `Босс оказался сильнее...`, { fontSize: '28px', color: '#ffffff', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5).setDepth(102);
-
     const btn = this.add.container(360, 740).setDepth(102);
     const bg = this.add.graphics().fillStyle(0x3498db, 1).fillRoundedRect(-150, -40, 300, 80, 30).lineStyle(6, 0xffffff, 1).strokeRoundedRect(-150, -40, 300, 80, 30);
     btn.add([bg, this.add.text(0, 0, 'В МЕНЮ', { fontSize: '36px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 5 }).setOrigin(0.5)]);
-    btn.setSize(300, 80).setInteractive();
-    btn.on('pointerup', () => this.time.delayedCall(100, () => this.scene.start('BossListScene')));
+    btn.setSize(300, 80).setInteractive(); btn.on('pointerup', () => this.time.delayedCall(100, () => this.scene.start('BossListScene')));
   }
 }
