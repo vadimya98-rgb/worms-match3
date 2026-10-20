@@ -7,10 +7,9 @@ export default class BossListScene extends Phaser.Scene {
   }
 
   create() {
-    // Фон
     this.add.image(360, 640, 'bg').setDisplaySize(720, 1280);
-
     this.add.rectangle(360, 60, 720, 100, 0x000022, 0.8);
+
     this.add.text(30, 60, `Фузы: ${Save.getFuzz()}`, { 
       fontSize: '28px', color: '#ffcc66', stroke: '#000000', strokeThickness: 4 
     }).setOrigin(0, 0.5);
@@ -31,11 +30,10 @@ export default class BossListScene extends Phaser.Scene {
 
   renderBossMap() {
     const startY = 280;
-    const spacingY = 220; // Чуть уменьшил, чтобы 4 босса влезли на экран
+    const spacingY = 220;
 
     BOSSES.forEach((boss, index) => {
       let x = 360;
-      // Зигзаг для 4-х боссов: влево, вправо, по центру, влево
       if (index === 0) x = 200;
       if (index === 1) x = 520;
       if (index === 2) x = 360;
@@ -49,11 +47,18 @@ export default class BossListScene extends Phaser.Scene {
       if (status === 'available') color = 0xff3333;
       if (status === 'defeated') color = 0x33cc66;
 
-      const circle = this.add.circle(x, y, 60, color).setStrokeStyle(4, 0xffffff);
+      // Круглая подложка со статусом
+      const circle = this.add.circle(x, y, 65, color).setStrokeStyle(4, 0xffffff);
       circle.setInteractive();
 
-      this.add.text(x, y, `${index + 1}`, { fontSize: '48px', color: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5);
-      this.add.text(x, y + 80, boss.name, { 
+      // КАРТИНКА БОССА ВНУТРИ КРУЖОЧКА
+      const bossImg = this.add.image(x, y, 'boss' + index);
+      bossImg.setDisplaySize(90, 90);
+      
+      // Если босс еще закрыт, делаем его картинку полупрозрачной
+      if (status === 'locked') bossImg.setAlpha(0.5);
+
+      this.add.text(x, y + 85, boss.name, { 
         fontSize: '24px', color: '#ffffff', align: 'center', wordWrap: { width: 200 }, stroke: '#000000', strokeThickness: 4 
       }).setOrigin(0.5);
 
