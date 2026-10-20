@@ -17,10 +17,7 @@ export default class ShopScene extends Phaser.Scene {
   }
 
   buildHeader() {
-    // Кнопка Назад
     this.createCandyButton(100, 50, 140, 50, '←', 0x3498db, () => this.scene.start('HubScene'));
-
-    // Фузы (Стекло)
     this.add.graphics().fillStyle(0xffffff, 0.15).fillRoundedRect(520, 25, 180, 50, 15).lineStyle(2, 0xffcc00, 0.8).strokeRoundedRect(520, 25, 180, 50, 15);
     this.add.text(545, 50, '💰', { fontSize: '28px' }).setOrigin(0, 0.5);
     this.fuzzText = this.add.text(590, 50, `${Save.getFuzz()}`, { fontSize: '24px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0, 0.5);
@@ -30,7 +27,7 @@ export default class ShopScene extends Phaser.Scene {
     this.tabCharsBtn = this.add.text(200, 150, 'ПЕРСОНАЖИ', { fontSize: '24px', color: '#fff', backgroundColor: '#2ecc71', padding: { x: 20, y: 10 }, stroke: '#000', strokeThickness: 3 }).setOrigin(0.5).setInteractive();
     this.tabCharsBtn.on('pointerdown', () => { if (this.currentTab !== 'characters') { this.currentTab = 'characters'; this.refreshContent(); } });
 
-    this.tabBoostsBtn = this.add.text(520, 150, 'БУСТЫ', { fontSize: '24px', color: '#fff', backgroundColor: '#2c3e50', padding: { x: 20, y: 10 }, stroke: '#000', strokeThickness: 3 }).setOrigin(0.5).setInteractive();
+    this.tabBoostsBtn = this.add.text(520, 150, 'ПРЕДМЕТЫ', { fontSize: '24px', color: '#fff', backgroundColor: '#2c3e50', padding: { x: 20, y: 10 }, stroke: '#000', strokeThickness: 3 }).setOrigin(0.5).setInteractive();
     this.tabBoostsBtn.on('pointerdown', () => { if (this.currentTab !== 'boosts') { this.currentTab = 'boosts'; this.refreshContent(); } });
   }
 
@@ -46,27 +43,26 @@ export default class ShopScene extends Phaser.Scene {
   }
 
   renderCharacters() {
-    let y = 260;
+    let y = 220;
     CHARACTERS.forEach((char) => {
       const state = Save.getCharacter(char.id);
       
-      // Стеклянная карточка
-      const bg = this.add.graphics().fillStyle(0xffffff, 0.1).fillRoundedRect(40, y, 640, 140, 20).lineStyle(2, 0xffffff, 0.3).strokeRoundedRect(40, y, 640, 140, 20);
+      const bg = this.add.graphics().fillStyle(0xffffff, 0.1).fillRoundedRect(40, y, 640, 130, 20).lineStyle(2, 0xffffff, 0.3).strokeRoundedRect(40, y, 640, 130, 20);
       this.container.add(bg);
 
-      const charImg = this.add.image(110, y + 70, char.id).setDisplaySize(80, 80);
+      const charImg = this.add.image(100, y + 65, char.id).setDisplaySize(70, 70);
       this.container.add(charImg);
 
-      this.container.add(this.add.text(170, y + 30, state.owned ? `${char.name} (Ур. ${state.level})` : char.name, { fontSize: '26px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }));
+      this.container.add(this.add.text(150, y + 20, state.owned ? `${char.name} (Ур. ${state.level})` : char.name, { fontSize: '24px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }));
       
       if (state.owned) {
-        this.container.add(this.add.text(170, y + 75, `HP: ${getCharacterMaxHp(char.id, state.level)}`, { fontSize: '20px', color: '#2ecc71', fontStyle: 'bold' }));
+        this.container.add(this.add.text(150, y + 65, `HP: ${getCharacterMaxHp(char.id, state.level)}`, { fontSize: '18px', color: '#2ecc71', fontStyle: 'bold' }));
       } else {
-        this.container.add(this.add.text(170, y + 75, char.description, { fontSize: '16px', color: '#ccc', wordWrap: { width: 300 } }));
+        this.container.add(this.add.text(150, y + 65, char.description, { fontSize: '14px', color: '#ccc', wordWrap: { width: 300 } }));
       }
 
-      this.createCharButton(600, y + 70, char, state);
-      y += 160;
+      this.createCharButton(600, y + 65, char, state);
+      y += 145;
     });
   }
 
@@ -85,14 +81,13 @@ export default class ShopScene extends Phaser.Scene {
     const btnColor = label === 'MAX' ? 0x7f8c8d : (canAfford ? 0x2ecc71 : 0xe74c3c);
 
     const btn = this.add.container(x, y);
-    const bBg = this.add.graphics().fillStyle(Phaser.Display.Color.IntegerToColor(btnColor).darken(20).color, 1).fillRoundedRect(-70, -30, 140, 70, 15);
-    const bMain = this.add.graphics().fillStyle(btnColor, 1).fillRoundedRect(-70, -35, 140, 70, 15);
-    const bGlow = this.add.graphics().fillStyle(0xffffff, 0.2).fillRoundedRect(-65, -30, 130, 30, 10);
+    const bBg = this.add.graphics().fillStyle(Phaser.Display.Color.IntegerToColor(btnColor).darken(20).color, 1).fillRoundedRect(-70, -25, 140, 60, 15);
+    const bMain = this.add.graphics().fillStyle(btnColor, 1).fillRoundedRect(-70, -30, 140, 60, 15);
     
-    btn.add([bBg, bMain, bGlow, this.add.text(0, -15, label, { fontSize: '16px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 2 }).setOrigin(0.5)]);
+    btn.add([bBg, bMain, this.add.text(0, -12, label, { fontSize: '16px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 2 }).setOrigin(0.5)]);
     if (label !== 'MAX') btn.add(this.add.text(0, 10, `${cost}💰`, { fontSize: '16px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 2 }).setOrigin(0.5));
 
-    btn.setSize(140, 70);
+    btn.setSize(140, 60);
     if (label !== 'MAX' && canAfford) {
       btn.setInteractive({ useHandCursor: true });
       btn.on('pointerdown', () => {
@@ -107,23 +102,37 @@ export default class ShopScene extends Phaser.Scene {
   }
 
   renderBoosts() {
-    const y = 260, medkitPrice = 100;
-    this.container.add(this.add.graphics().fillStyle(0xffffff, 0.1).fillRoundedRect(40, y, 640, 140, 20).lineStyle(2, 0xffffff, 0.3).strokeRoundedRect(40, y, 640, 140, 20));
+    let y = 220;
+    const medkitPrice = 150;
+    const antitoxinPrice = 250;
 
-    this.container.add(this.add.text(80, y + 40, 'Аптечка', { fontSize: '32px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }));
-    this.container.add(this.add.text(80, y + 90, `В наличии: x${Save.getMedkits()}`, { fontSize: '24px', color: '#f1c40f', fontStyle: 'bold' }));
+    // АПТЕЧКА
+    this.container.add(this.add.graphics().fillStyle(0xffffff, 0.1).fillRoundedRect(40, y, 640, 130, 20).lineStyle(2, 0xffffff, 0.3).strokeRoundedRect(40, y, 640, 130, 20));
+    this.container.add(this.add.text(70, y + 30, '💊 Аптечка', { fontSize: '28px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }));
+    this.container.add(this.add.text(70, y + 75, `В наличии: x${Save.getMedkits()} | Лечит 300 ХП`, { fontSize: '18px', color: '#2ecc71', fontStyle: 'bold' }));
+    this.createItemButton(600, y + 65, medkitPrice, Save.getFuzz() >= medkitPrice, () => {
+        if (Save.spendFuzz(medkitPrice)) { Save.addMedkits(1); this.updateFuzzUI(); this.refreshContent(); }
+    });
+    
+    y += 150;
 
-    const canAfford = Save.getFuzz() >= medkitPrice;
+    // АНТИТОКСИН
+    this.container.add(this.add.graphics().fillStyle(0xffffff, 0.1).fillRoundedRect(40, y, 640, 130, 20).lineStyle(2, 0xffffff, 0.3).strokeRoundedRect(40, y, 640, 130, 20));
+    this.container.add(this.add.text(70, y + 30, '🧪 Антитоксин', { fontSize: '28px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }));
+    this.container.add(this.add.text(70, y + 75, `В наличии: x${Save.getAntitoxins()} | Лечит 50 ХП (3 хода)`, { fontSize: '18px', color: '#00f0ff', fontStyle: 'bold' }));
+    this.createItemButton(600, y + 65, antitoxinPrice, Save.getFuzz() >= antitoxinPrice, () => {
+        if (Save.spendFuzz(antitoxinPrice)) { Save.addAntitoxins(1); this.updateFuzzUI(); this.refreshContent(); }
+    });
+  }
+
+  createItemButton(x, y, price, canAfford, onClick) {
     const btnColor = canAfford ? 0x2ecc71 : 0xe74c3c;
-    
-    const btn = this.add.container(600, y + 70);
-    const bBg = this.add.graphics().fillStyle(Phaser.Display.Color.IntegerToColor(btnColor).darken(20).color, 1).fillRoundedRect(-70, -30, 140, 70, 15);
-    const bMain = this.add.graphics().fillStyle(btnColor, 1).fillRoundedRect(-70, -35, 140, 70, 15);
-    
-    btn.add([bBg, bMain, this.add.text(0, -15, 'КУПИТЬ', { fontSize: '16px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 2 }).setOrigin(0.5), this.add.text(0, 10, `${medkitPrice}💰`, { fontSize: '16px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 2 }).setOrigin(0.5)]);
-    
-    btn.setSize(140, 70);
-    if (canAfford) btn.setInteractive({ useHandCursor: true }).on('pointerdown', () => { if (Save.spendFuzz(medkitPrice)) { Save.addMedkits(1); this.updateFuzzUI(); this.refreshContent(); } });
+    const btn = this.add.container(x, y);
+    const bBg = this.add.graphics().fillStyle(Phaser.Display.Color.IntegerToColor(btnColor).darken(20).color, 1).fillRoundedRect(-70, -25, 140, 60, 15);
+    const bMain = this.add.graphics().fillStyle(btnColor, 1).fillRoundedRect(-70, -30, 140, 60, 15);
+    btn.add([bBg, bMain, this.add.text(0, -12, 'КУПИТЬ', { fontSize: '16px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 2 }).setOrigin(0.5), this.add.text(0, 10, `${price}💰`, { fontSize: '16px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 2 }).setOrigin(0.5)]);
+    btn.setSize(140, 60);
+    if (canAfford) btn.setInteractive({ useHandCursor: true }).on('pointerdown', onClick);
     this.container.add(btn);
   }
 
