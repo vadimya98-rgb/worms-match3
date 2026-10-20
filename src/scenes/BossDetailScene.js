@@ -20,14 +20,19 @@ export default class BossDetailScene extends Phaser.Scene {
     this.add.image(360, 180, 'boss' + this.bossIndex).setDisplaySize(180, 180);
     this.add.text(360, 300, this.boss.name, { fontSize: '48px', color: '#e74c3c', fontStyle: 'bold', stroke: '#000', strokeThickness: 8 }).setOrigin(0.5);
 
-    const descBg = this.add.graphics().fillStyle(0x2c3e50, 0.9).fillRoundedRect(160, 350, 400, 90, 20).lineStyle(4, 0x00ff9d, 1).strokeRoundedRect(160, 350, 400, 90, 20);
-    this.add.text(360, 395, this.boss.description, { fontSize: '20px', color: '#fff', align: 'center', wordWrap: { width: 360 } }).setOrigin(0.5);
+    // УВЕЛИЧИЛИ РАМКУ ОПИСАНИЯ, ЧТОБЫ ВЛЕЗЛА НАГРАДА
+    const descBg = this.add.graphics().fillStyle(0x2c3e50, 0.9).fillRoundedRect(160, 350, 400, 120, 20).lineStyle(4, 0x00ff9d, 1).strokeRoundedRect(160, 350, 400, 120, 20);
+    
+    this.add.text(360, 385, this.boss.description, { fontSize: '18px', color: '#fff', align: 'center', wordWrap: { width: 360 } }).setOrigin(0.5);
+    
+    // ДОБАВИЛИ НАГРАДУ
+    this.add.text(360, 435, `Награда: ${this.boss.reward} Фузов`, { fontSize: '22px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5);
 
-    this.add.text(360, 480, 'ВЫБЕРИТЕ БОЙЦОВ', { fontSize: '26px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 5 }).setOrigin(0.5);
+    this.add.text(360, 520, 'ВЫБЕРИТЕ БОЙЦОВ', { fontSize: '26px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 5 }).setOrigin(0.5);
 
     this.slotContainers = [];
-    this.createSlot(250, 600, 0);
-    this.createSlot(470, 600, 1);
+    this.createSlot(250, 630, 0);
+    this.createSlot(470, 630, 1);
 
     this.createCandyButton(360, 1100, 300, 80, 'В БОЙ', 0x00ff9d, () => {
       const team = this.selectedChars.filter(id => id !== null);
@@ -106,7 +111,6 @@ export default class BossDetailScene extends Phaser.Scene {
           const img = this.add.image(0, 0, char.id).setDisplaySize(110, 110);
           slotContainer.add(img);
           
-          // ИСПРАВЛЕНИЕ: Задержка 10мс перед удалением, чтобы Phaser успел обработать клик
           this.time.delayedCall(10, () => elements.forEach(el => el.destroy()));
         });
         elements.push(zone);
