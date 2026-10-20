@@ -6,7 +6,6 @@ export default class FarmScene extends Phaser.Scene {
   }
 
   create() {
-    // Фон
     this.add.image(360, 640, 'bg').setDisplaySize(720, 1280);
 
     this.COLS = 6;
@@ -23,7 +22,6 @@ export default class FarmScene extends Phaser.Scene {
     this.movesLeft = 15;
     this.fuzzEarned = 0;
 
-    // 6 видов оружия
     this.pool = [0, 1, 2, 3, 4, 5];
 
     this.buildHUD();
@@ -91,13 +89,13 @@ export default class FarmScene extends Phaser.Scene {
       if (this.isBusy || this.isGameOver) return;
       if (!this.selectedTile) {
         this.selectedTile = tile;
-        tile.setScale(0.9);
+        tile.setTint(0xaaaaaa); // ИСПРАВЛЕНО: Вместо setScale(0.9)
       } else if (this.selectedTile === tile) {
-        this.selectedTile.setScale(1);
+        this.selectedTile.clearTint(); // ИСПРАВЛЕНО: Вместо setScale(1)
         this.selectedTile = null;
       } else {
         const firstTile = this.selectedTile;
-        this.selectedTile.setScale(1);
+        firstTile.clearTint(); // ИСПРАВЛЕНО: Вместо setScale(1)
         this.selectedTile = null;
         if (this.areNeighbors(firstTile, tile)) this.swapTiles(firstTile, tile);
       }
