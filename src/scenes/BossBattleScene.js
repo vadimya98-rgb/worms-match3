@@ -17,7 +17,6 @@ export default class BossBattleScene extends Phaser.Scene {
     this.TILE_SIZE = 85; 
     this.GAP = 4;
     this.OFFSET_X = (720 - this.COLS * this.TILE_SIZE) / 2;
-    // СДВИНУЛИ СЕТКУ ВВЕРХ (было 580)
     this.OFFSET_Y = 320;
 
     this.bossHp = this.bossData.maxHp;
@@ -47,7 +46,7 @@ export default class BossBattleScene extends Phaser.Scene {
 
   create() {
     this.add.image(360, 640, 'bg').setDisplaySize(720, 1280);
-    this.add.rectangle(360, 640, 720, 1280, 0x000000, 0.3); // Легкое затемнение для контраста
+    this.add.rectangle(360, 640, 720, 1280, 0x000000, 0.3);
 
     this.buildUI();
     this.createBoard();
@@ -57,12 +56,10 @@ export default class BossBattleScene extends Phaser.Scene {
   buildUI() {
     this.add.text(360, 30, this.bossData.name, { fontSize: '32px', color: '#ff3333', fontStyle: 'bold', stroke: '#000000', strokeThickness: 4 }).setOrigin(0.5);
     
-    // ДЛИННАЯ ПОЛОСКА HP БОССА (Ширина 600)
     this.add.rectangle(360, 70, 600, 25, 0x333333).setStrokeStyle(2, 0xffffff);
     this.bossHpBar = this.add.rectangle(60, 70, 600, 25, 0xff3333).setOrigin(0, 0.5);
     this.bossHpText = this.add.text(360, 70, `${this.bossHp}/${this.bossData.maxHp}`, { fontSize: '18px', color: '#ffffff' }).setOrigin(0.5);
 
-    // КОРОТКАЯ ПОЛОСКА БРОНИ (Ширина 400)
     if (this.bossArmor > 0) {
       this.add.rectangle(360, 105, 400, 12, 0x333333).setStrokeStyle(2, 0xaaaaaa);
       this.bossArmorBar = this.add.rectangle(160, 105, 400, 12, 0x3399ff).setOrigin(0, 0.5);
@@ -77,7 +74,6 @@ export default class BossBattleScene extends Phaser.Scene {
     this.charContainers = [];
     this.renderTeamUI();
 
-    // АПТЕЧКА В ЛЕВОМ НИЖНЕМ УГЛУ
     this.medkitText = this.add.text(30, 1180, `💊 x${Save.getMedkits()}`, { 
       fontSize: '24px', color: '#ffffff', backgroundColor: '#333366', padding: { x: 15, y: 10 },
       stroke: '#000000', strokeThickness: 3
@@ -85,7 +81,6 @@ export default class BossBattleScene extends Phaser.Scene {
     this.medkitText.setInteractive();
     this.medkitText.on('pointerdown', () => this.useMedkit());
 
-    // УДАР В ПРАВОМ НИЖНЕМ УГЛУ
     this.ultBtn = this.add.text(690, 1180, '🔥 УДАР', { 
       fontSize: '22px', color: '#888888', backgroundColor: '#222222', padding: { x: 15, y: 10 },
       stroke: '#000000', strokeThickness: 2
@@ -99,21 +94,17 @@ export default class BossBattleScene extends Phaser.Scene {
     this.charContainers = [];
 
     this.team.forEach((char, index) => {
-      // АКТИВНЫЙ ПО ЦЕНТРУ (360), НЕАКТИВНЫЙ СЛЕВА (160)
       const isActive = (index === this.activeCharIndex);
       const x = isActive ? 360 : 160;
-      const y = 980; // Позиция по вертикали (под сеткой)
+      const y = 980; 
       
       const borderColor = isActive ? 0x33cc66 : 0x444488;
       
-      // Круглая подложка под персонажа
       const bgCircle = this.add.circle(x, y, 50, 0x222244).setStrokeStyle(4, borderColor);
       
-      // Картинка персонажа
       const charImg = this.add.image(x, y, char.id);
       charImg.setDisplaySize(80, 80);
 
-      // Имя и ХП НАД персонажем
       const name = this.add.text(x, y - 95, `${char.name}`, { 
         fontSize: '20px', color: '#ffffff', stroke: '#000000', strokeThickness: 3 
       }).setOrigin(0.5);
@@ -172,13 +163,13 @@ export default class BossBattleScene extends Phaser.Scene {
       if (this.isBusy || this.isGameOver) return;
       if (!this.selectedTile) {
         this.selectedTile = tile;
-        tile.setScale(0.9);
+        tile.setTint(0xaaaaaa); // ИСПРАВЛЕНО
       } else if (this.selectedTile === tile) {
-        this.selectedTile.setScale(1);
+        this.selectedTile.clearTint(); // ИСПРАВЛЕНО
         this.selectedTile = null;
       } else {
         const firstTile = this.selectedTile;
-        this.selectedTile.setScale(1);
+        firstTile.clearTint(); // ИСПРАВЛЕНО
         this.selectedTile = null;
         if (this.areNeighbors(firstTile, tile)) this.swapTiles(firstTile, tile);
       }
@@ -488,12 +479,12 @@ export default class BossBattleScene extends Phaser.Scene {
 
   updateBossHpUI() {
     const percent = Math.max(0, this.bossHp / this.bossData.maxHp);
-    this.bossHpBar.width = 600 * percent; // Ширина обновлена под 600
+    this.bossHpBar.width = 600 * percent;
     this.bossHpText.setText(`${this.bossHp}/${this.bossData.maxHp}`);
 
     if (this.bossArmorBar) {
       const armorPercent = Math.max(0, this.bossArmor / this.bossData.armor);
-      this.bossArmorBar.width = 400 * armorPercent; // Ширина обновлена под 400
+      this.bossArmorBar.width = 400 * armorPercent;
       this.bossArmorText.setText(`Броня: ${this.bossArmor}`);
     }
   }
