@@ -31,7 +31,6 @@ export default class BossBattleScene extends Phaser.Scene {
   }
 
   create() {
-    // Текстуры для частиц
     if (!this.textures.exists('white_pixel')) {
       const g = this.make.graphics();
       g.fillStyle(0xffffff); g.fillRect(0, 0, 8, 8);
@@ -45,7 +44,6 @@ export default class BossBattleScene extends Phaser.Scene {
     this.createBoard();
     this.setupInput();
     
-    // Показываем, что ход игрока
     this.showTurnBanner('ВАШ ХОД', '#2ecc71');
   }
 
@@ -114,7 +112,7 @@ export default class BossBattleScene extends Phaser.Scene {
       
       const bgCircle = this.add.graphics().fillStyle(0x2c3e50, 0.9).fillCircle(x, y, 65);
       let neonColor = isActive ? 0x2ecc71 : 0x555555;
-      if (isActive && this.playerMovesCount >= 3) neonColor = 0xe74c3c;
+      if (isActive && this.playerMovesCount >= 3) neonColor = 0xe74c3c; // Ярко-красный неон
 
       bgCircle.lineStyle(8, neonColor, 0.3).strokeCircle(x, y, 65);
       bgCircle.lineStyle(4, neonColor, 1).strokeCircle(x, y, 65);
@@ -127,6 +125,7 @@ export default class BossBattleScene extends Phaser.Scene {
       const hpBg = this.add.graphics().fillStyle(0x000000, 0.8).fillRoundedRect(x - 50, y - 95, 100, 16, 8);
       const hpFill = this.add.graphics().fillStyle(0x2ecc71, 1).fillRoundedRect(x - 50 + 2, y - 93, 96 * (char.hp/char.maxHp), 12, 6);
 
+      // ОГОНЕК КОНТР-УДАРА
       if (isActive && this.playerMovesCount >= 3 && !this.isBusy && !this.isGameOver) {
         const fireIcon = this.add.text(x + 50, y - 50, '🔥', { fontSize: '36px' }).setOrigin(0.5);
         this.tweens.add({ targets: fireIcon, scale: 1.4, duration: 300, yoyo: true, repeat: -1 });
@@ -238,9 +237,7 @@ export default class BossBattleScene extends Phaser.Scene {
   removeTiles(tiles) {
     const weapon = WEAPONS[tiles[0].colorIndex];
     
-    // Урон будет нанесен в коллбэке анимации попадания
     this.shootProjectile(tiles[0].colorIndex, tiles[0].x, tiles[0].y, this.bossSprite.x, this.bossSprite.y, () => {
-        // Логика урона при попадании
         let dmgHp = weapon.damage, dmgArmor = 0;
         if (weapon.armorPierce > 0 && this.bossArmor > 0) { dmgArmor = weapon.armorPierce; dmgHp = 0; }
         else if (this.bossArmor > 0) { dmgArmor = weapon.damage; dmgHp = 0; }
@@ -258,15 +255,13 @@ export default class BossBattleScene extends Phaser.Scene {
     });
 
     tiles.forEach(t => { this.grid[t.gridRow][t.gridCol] = null; t.bg.destroy(); t.destroy(); });
-    this.playerMovesCount++; this.renderTeamUI();
+    this.playerMovesCount++; 
+    // Принудительно обновляем интерфейс, чтобы показать огонек, но огонек появится только когда isBusy=false
+    this.renderTeamUI();
     
-    // Даем время анимации завершиться (около 3.5 секунд) и только потом падают фишки
     this.time.delayedCall(3500, () => this.applyGravity());
   }
 
-  // ==========================================
-  // НАДПИСЬ ХОДА
-  // ==========================================
   showTurnBanner(text, color) {
     this.isBusy = true;
     const bannerBg = this.add.graphics().fillStyle(0x000000, 0.8).fillRoundedRect(160, 600, 400, 100, 30).lineStyle(4, color, 1).strokeRoundedRect(160, 600, 400, 100, 30).setDepth(200);
@@ -279,123 +274,38 @@ export default class BossBattleScene extends Phaser.Scene {
         this.tweens.add({ targets: [bannerBg, txt], alpha: 0, scale: 0.5, duration: 300, onComplete: () => {
             bannerBg.destroy(); txt.destroy();
             this.isBusy = false;
-            if (text === 'ВАШ ХОД') {
-                // Если был пропуск босса, восстанавливаем цвет
-                this.bossSprite.clearTint();
-            }
+            this.renderTeamUI(); // <--- ВАЖНО: Обновляем UI после снятия блокировки
         }});
     });
   }
 
-  // ==========================================
-  // АНИМАЦИИ ОРУЖИЯ (В обе стороны)
-  // ==========================================
   shootProjectile(wId, sx, sy, tx, ty, onComplete) {
     let proj;
 
     if (wId === 0) { 
-      // БАЗУКА
       proj = this.add.image(sx, sy, 'weapon0').setDisplaySize(40, 40).setDepth(150);
-      this.tweens.addCounter({
-        from: 0, to: 1, duration: 2000, ease: 'Linear',
-        onUpdate: (tw) => { 
-          let t = tw.getValue(); let radius = 150 * (1 - t); 
-          proj.x = Phaser.Math.Linear(sx, tx, t) + Math.sin(t * Math.PI * 10) * radius; 
-          proj.y = Phaser.Math.Linear(sy, ty, t) + Math.cos(t * Math.PI * 10) * radius; 
-          proj.angle += 10;
-        }, 
-        onComplete: () => { proj.destroy(); onComplete(); } 
-      });
-
+      this.tweens.addCounter({ from: 0, to: 1, duration: 2000, ease: 'Linear', onUpdate: (tw) => { let t = tw.getValue(); let radius = 150 * (1 - t); proj.x = Phaser.Math.Linear(sx, tx, t) + Math.sin(t * Math.PI * 10) * radius; proj.y = Phaser.Math.Linear(sy, ty, t) + Math.cos(t * Math.PI * 10) * radius; proj.angle += 10; }, onComplete: () => { proj.destroy(); onComplete(); } });
     } else if (wId === 1) { 
-      // ГРАНАТА
       proj = this.add.image(sx, sy, 'weapon1').setDisplaySize(30, 30).setDepth(150);
-      this.tweens.addCounter({ 
-        from: 0, to: 1, duration: 1500, ease: 'Linear', 
-        onUpdate: (tw) => { 
-          let t = tw.getValue(); 
-          proj.x = Phaser.Math.Linear(sx, tx, t); 
-          proj.y = Phaser.Math.Linear(sy, ty, t) - Math.sin(t * Math.PI) * 150; 
-          proj.angle += 10;
-        }, 
-        onComplete: () => { 
-          proj.destroy(); 
-          this.spawnSparks(tx, ty, 0xffaa00); 
-          onComplete(); 
-        } 
-      });
-
+      this.tweens.addCounter({ from: 0, to: 1, duration: 1500, ease: 'Linear', onUpdate: (tw) => { let t = tw.getValue(); proj.x = Phaser.Math.Linear(sx, tx, t); proj.y = Phaser.Math.Linear(sy, ty, t) - Math.sin(t * Math.PI) * 150; proj.angle += 10; }, onComplete: () => { proj.destroy(); this.spawnSparks(tx, ty, 0xffaa00); onComplete(); } });
     } else if (wId === 2) {
-      // ДИНАМИТ
       proj = this.add.image(tx + 50, ty + 50, 'weapon2').setDisplaySize(50, 50).setDepth(150).setAlpha(0);
-      this.tweens.add({ targets: proj, alpha: 1, duration: 500, onComplete: () => {
-        this.time.delayedCall(1000, () => {
-          proj.destroy();
-          this.spawnSparks(tx, ty, 0xff5500);
-          let targetSprite = (sx === this.bossSprite.x) ? this.bossSprite : this.charContainers.find(c=>c.type==='Image');
-          if(targetSprite && targetSprite.y) {
-              this.tweens.add({ targets: targetSprite, y: targetSprite.y - 60, duration: 200, yoyo: true, ease: 'Quad.easeOut', onComplete: onComplete });
-          } else { onComplete(); }
-        });
-      }});
-
+      this.tweens.add({ targets: proj, alpha: 1, duration: 500, onComplete: () => { this.time.delayedCall(1000, () => { proj.destroy(); this.spawnSparks(tx, ty, 0xff5500); let targetSprite = (sx === this.bossSprite.x) ? this.bossSprite : this.charContainers.find(c=>c.type==='Image'); if(targetSprite && targetSprite.y) { this.tweens.add({ targets: targetSprite, y: targetSprite.y - 60, duration: 200, yoyo: true, ease: 'Quad.easeOut', onComplete: onComplete }); } else { onComplete(); } }); }});
     } else if (wId === 3) { 
-      // СВЕРЛЯЩАЯ
       proj = this.add.image(sx, sy, 'weapon3').setDisplaySize(35, 35).setDepth(150);
-      this.tweens.addCounter({
-        from: 0, to: 1, duration: 1800, ease: 'Linear',
-        onUpdate: (tw) => { 
-          let t = tw.getValue(); 
-          proj.x = Phaser.Math.Linear(sx, tx, t) + Math.sin(t * Math.PI * 8) * 100; 
-          proj.y = Phaser.Math.Linear(sy, ty, t) - Math.cos(t * Math.PI * 8) * 100; 
-          proj.angle += 20;
-        }, 
-        onComplete: () => { proj.destroy(); this.spawnSparks(tx, ty, 0xff00ff); onComplete(); } 
-      });
-
+      this.tweens.addCounter({ from: 0, to: 1, duration: 1800, ease: 'Linear', onUpdate: (tw) => { let t = tw.getValue(); proj.x = Phaser.Math.Linear(sx, tx, t) + Math.sin(t * Math.PI * 8) * 100; proj.y = Phaser.Math.Linear(sy, ty, t) - Math.cos(t * Math.PI * 8) * 100; proj.angle += 20; }, onComplete: () => { proj.destroy(); this.spawnSparks(tx, ty, 0xff00ff); onComplete(); } });
     } else if (wId === 4) { 
-      // МИНА
       proj = this.add.image(tx - 50, ty + 50, 'weapon4').setDisplaySize(40, 40).setDepth(150).setAlpha(0);
-      this.tweens.add({ targets: proj, alpha: 1, duration: 500, onComplete: () => {
-        this.time.delayedCall(1000, () => {
-          proj.destroy();
-          this.spawnSparks(tx, ty, 0xff0000);
-          let targetSprite = (sx === this.bossSprite.x) ? this.bossSprite : this.charContainers.find(c=>c.type==='Image');
-          if(targetSprite && targetSprite.x) {
-              this.tweens.add({ targets: targetSprite, x: targetSprite.x + 60, duration: 150, yoyo: true, ease: 'Quad.easeOut', onComplete: onComplete });
-          } else { onComplete(); }
-        });
-      }});
-
+      this.tweens.add({ targets: proj, alpha: 1, duration: 500, onComplete: () => { this.time.delayedCall(1000, () => { proj.destroy(); this.spawnSparks(tx, ty, 0xff0000); let targetSprite = (sx === this.bossSprite.x) ? this.bossSprite : this.charContainers.find(c=>c.type==='Image'); if(targetSprite && targetSprite.x) { this.tweens.add({ targets: targetSprite, x: targetSprite.x + 60, duration: 150, yoyo: true, ease: 'Quad.easeOut', onComplete: onComplete }); } else { onComplete(); } }); }});
     } else { 
-      // ЛЕДЯНАЯ МИНА (5)
       proj = this.add.image(tx + 50, ty + 50, 'weapon5').setDisplaySize(40, 40).setDepth(150).setAlpha(0);
-      this.tweens.add({ targets: proj, alpha: 1, duration: 500, onComplete: () => {
-        this.time.delayedCall(1000, () => {
-          proj.destroy();
-          this.spawnSparks(tx, ty, 0x00ffff);
-          this.cameras.main.flash(500, 0, 255, 255);
-          onComplete();
-        });
-      }});
+      this.tweens.add({ targets: proj, alpha: 1, duration: 500, onComplete: () => { this.time.delayedCall(1000, () => { proj.destroy(); this.spawnSparks(tx, ty, 0x00ffff); this.cameras.main.flash(500, 0, 255, 255); onComplete(); }); }});
     }
   }
 
   spawnSparks(x, y, color) {
-    let emitter = this.add.particles(x, y, 'white_pixel', {
-        speed: { min: 150, max: 400 }, angle: { min: 0, max: 360 },
-        scale: { start: 1.5, end: 0 }, lifespan: 1000,
-        quantity: 20, tint: color, blendMode: 'ADD'
-    }).setDepth(160);
-    
-    // Добавляем капли крови (падают вниз)
-    let blood = this.add.particles(x, y, 'white_pixel', {
-        speed: { min: 50, max: 150 }, angle: { min: 45, max: 135 },
-        gravityY: 800, scale: { start: 0.8, end: 0.2 },
-        alpha: { start: 1, end: 0 }, lifespan: 1500,
-        quantity: 15, tint: 0xff0000
-    }).setDepth(159);
-
+    let emitter = this.add.particles(x, y, 'white_pixel', { speed: { min: 150, max: 400 }, angle: { min: 0, max: 360 }, scale: { start: 1.5, end: 0 }, lifespan: 1000, quantity: 20, tint: color, blendMode: 'ADD' }).setDepth(160);
+    let blood = this.add.particles(x, y, 'white_pixel', { speed: { min: 50, max: 150 }, angle: { min: 45, max: 135 }, gravityY: 800, scale: { start: 0.8, end: 0.2 }, alpha: { start: 1, end: 0 }, lifespan: 1500, quantity: 15, tint: 0xff0000 }).setDepth(159);
     this.time.delayedCall(1500, () => { emitter.destroy(); blood.destroy(); });
   }
 
@@ -450,11 +360,7 @@ export default class BossBattleScene extends Phaser.Scene {
     
     this.cameras.main.shake(300, 0.05);
     let proj = this.add.circle(360, 1060, 30, 0xf1c40f).setDepth(150);
-    this.tweens.add({ targets: proj, x: this.bossSprite.x, y: this.bossSprite.y, duration: 1000, ease: 'Power2', onComplete: () => { 
-        proj.destroy(); 
-        this.spawnSparks(this.bossSprite.x, this.bossSprite.y, 0xf1c40f); 
-        this.hitBoss(); 
-    } });
+    this.tweens.add({ targets: proj, x: this.bossSprite.x, y: this.bossSprite.y, duration: 1000, ease: 'Power2', onComplete: () => { proj.destroy(); this.spawnSparks(this.bossSprite.x, this.bossSprite.y, 0xf1c40f); this.hitBoss(); } });
     
     let dmg = 70; 
     this.bossHp = Math.max(0, this.bossHp - dmg); this.updateBossHpUI();
@@ -471,7 +377,6 @@ export default class BossBattleScene extends Phaser.Scene {
     
     this.showTurnBanner('ХОД БОССА', '#e74c3c');
 
-    // Ждем, пока появится и исчезнет надпись, затем босс атакует
     this.time.delayedCall(2000, () => {
         if (this.poisonTurns > 0) { this.bossHp = Math.max(0, this.bossHp - 20); this.poisonTurns--; this.updateBossHpUI(); this.hitBoss(); }
         
@@ -479,9 +384,8 @@ export default class BossBattleScene extends Phaser.Scene {
         const bossWeapon = WEAPONS[bossWeaponId];
 
         this.shootProjectile(bossWeaponId, this.bossSprite.x, this.bossSprite.y, 360, 1060, () => {
-            // Попадание по игроку
             this.cameras.main.shake(200, 0.03);
-            this.spawnSparks(360, 1060, 0xff0000); // Кровь у игрока
+            this.spawnSparks(360, 1060, 0xff0000);
             
             this.team[this.activeCharIndex].hp = Math.max(0, this.team[this.activeCharIndex].hp - bossWeapon.damage);
             this.renderTeamUI();
@@ -562,7 +466,7 @@ export default class BossBattleScene extends Phaser.Scene {
     const bg = this.add.graphics().fillStyle(0x2ecc71, 1).fillRoundedRect(-150, -40, 300, 80, 30).lineStyle(6, 0xffffff, 1).strokeRoundedRect(-150, -40, 300, 80, 30);
     btn.add([bg, this.add.text(0, 0, 'ЗАБРАТЬ', { fontSize: '36px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 5 }).setOrigin(0.5)]);
     btn.setSize(300, 80).setInteractive();
-    btn.on('pointerdown', () => this.scene.start('BossListScene'));
+    btn.on('pointerup', () => this.time.delayedCall(100, () => this.scene.start('BossListScene')));
   }
 
   loseGame() {
@@ -578,6 +482,6 @@ export default class BossBattleScene extends Phaser.Scene {
     const bg = this.add.graphics().fillStyle(0x3498db, 1).fillRoundedRect(-150, -40, 300, 80, 30).lineStyle(6, 0xffffff, 1).strokeRoundedRect(-150, -40, 300, 80, 30);
     btn.add([bg, this.add.text(0, 0, 'В МЕНЮ', { fontSize: '36px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 5 }).setOrigin(0.5)]);
     btn.setSize(300, 80).setInteractive();
-    btn.on('pointerdown', () => this.scene.start('BossListScene'));
+    btn.on('pointerup', () => this.time.delayedCall(100, () => this.scene.start('BossListScene')));
   }
 }
