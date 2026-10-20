@@ -30,7 +30,6 @@ export default class BossDetailScene extends Phaser.Scene {
     this.createSlot(470, 600, 1);
 
     this.createCandyButton(360, 1100, 300, 80, 'В БОЙ', 0x00ff9d, () => {
-      // ФИЛЬТРУЕМ NULL, ЧТОБЫ НЕ БЫЛО ЗАВИСАНИЙ
       const team = this.selectedChars.filter(id => id !== null);
       if (team.length > 0) {
         this.scene.start('BossBattleScene', { bossIndex: this.bossIndex, team: team });
@@ -107,7 +106,8 @@ export default class BossDetailScene extends Phaser.Scene {
           const img = this.add.image(0, 0, char.id).setDisplaySize(110, 110);
           slotContainer.add(img);
           
-          elements.forEach(el => el.destroy());
+          // ИСПРАВЛЕНИЕ: Задержка 10мс перед удалением, чтобы Phaser успел обработать клик
+          this.time.delayedCall(10, () => elements.forEach(el => el.destroy()));
         });
         elements.push(zone);
       }
@@ -116,7 +116,9 @@ export default class BossDetailScene extends Phaser.Scene {
     });
 
     const cancelBtn = this.add.text(360, 1020, 'ОТМЕНА', { fontSize: '28px', color: '#e74c3c', fontStyle: 'bold', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5).setDepth(102).setInteractive();
-    cancelBtn.on('pointerdown', () => elements.forEach(el => el.destroy()));
+    cancelBtn.on('pointerdown', () => {
+        this.time.delayedCall(10, () => elements.forEach(el => el.destroy()));
+    });
     elements.push(cancelBtn);
   }
 }
