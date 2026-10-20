@@ -26,11 +26,9 @@ export default class FarmScene extends Phaser.Scene {
   }
 
   buildHUD() {
-    // Ходы (Стекло)
     this.add.graphics().fillStyle(0xffffff, 0.15).fillRoundedRect(20, 40, 180, 60, 20).lineStyle(3, 0xffffff, 0.5).strokeRoundedRect(20, 40, 180, 60, 20);
     this.movesText = this.add.text(110, 70, `Ходы: ${this.movesLeft}`, { fontSize: '24px', color: '#ffffff', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5);
 
-    // Фузы (Стекло)
     this.add.graphics().fillStyle(0xffffff, 0.15).fillRoundedRect(520, 40, 180, 60, 20).lineStyle(3, 0xffcc00, 0.8).strokeRoundedRect(520, 40, 180, 60, 20);
     this.add.text(550, 70, '💰', { fontSize: '28px' }).setOrigin(0, 0.5);
     this.fuzzText = this.add.text(600, 70, `${this.fuzzEarned}`, { fontSize: '24px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0, 0.5);
@@ -177,9 +175,11 @@ export default class FarmScene extends Phaser.Scene {
   }
 
   endGame() {
-    if (this.isGameOver) return; this.isGameOver = true; Save.addFuzz(this.fuzzEarned);
-    this.add.rectangle(360, 640, 720, 1280, 0x000000, 0.85).setDepth(100);
+    if (this.isGameOver) return; 
+    this.isGameOver = true; 
+    Save.addFuzz(this.fuzzEarned);
     
+    this.add.rectangle(360, 640, 720, 1280, 0x000000, 0.85).setDepth(100);
     const panel = this.add.graphics().setDepth(101).fillStyle(0x2c3e50, 0.95).fillRoundedRect(160, 440, 400, 400, 30).lineStyle(4, 0x2ecc71, 1).strokeRoundedRect(160, 440, 400, 400, 30);
     this.add.text(360, 520, 'ИГРА ОКОНЧЕНА', { fontSize: '40px', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5).setDepth(102);
     this.add.text(360, 620, `Собрано фузов:\n${this.fuzzEarned}`, { fontSize: '32px', color: '#f1c40f', align: 'center', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5).setDepth(102);
@@ -188,7 +188,9 @@ export default class FarmScene extends Phaser.Scene {
     const bg = this.add.graphics().fillStyle(0x2ecc71, 1).fillRoundedRect(-150, -40, 300, 80, 30).lineStyle(6, 0xffffff, 1).strokeRoundedRect(-150, -40, 300, 80, 30);
     btn.add([bg, this.add.text(0, 0, 'ЗАБРАТЬ', { fontSize: '36px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 5 }).setOrigin(0.5)]);
     btn.setSize(300, 80).setInteractive();
-    btn.on('pointerdown', () => this.scene.start('HubScene'));
+    
+    // ИСПРАВЛЕНИЕ: Теперь перекидывает на главный экран
+    btn.on('pointerdown', () => this.scene.start('HubScene')); 
   }
 
   createCandyButton(x, y, width, height, text, color, onClick) {
