@@ -1,5 +1,6 @@
 import { Save } from '../data/save.js';
 import { BOSSES } from '../data/bosses.js';
+import { WEAPONS } from '../data/weapons.js'; // Импортируем оружие
 import { getCharacterData, getCharacterMaxHp } from '../data/characters.js';
 
 export default class BossBattleScene extends Phaser.Scene {
@@ -19,8 +20,10 @@ export default class BossBattleScene extends Phaser.Scene {
     this.OFFSET_Y = 580;
 
     this.bossHp = this.bossData.maxHp;
+    this.bossArmor = this.bossData.armor; // Текущая броня
     this.isBusy = false;
     this.isGameOver = false;
+    this.playerStunned = false; // Флаг заморозки игрока
     
     this.team = data.team.map(id => {
       const char = getCharacterData(id);
@@ -33,25 +36,37 @@ export default class BossBattleScene extends Phaser.Scene {
     this.selectedTile = null;
     this.grid = [];
 
-    // Наш пул из 6 оружий
-    this.pool = [0, 1, 2, 3, 4, 5];
+    // Пул оружия берем ИЗ ХАРАКТЕРИСТИК БОССА
+    this.pool = this.bossData.weapons;
   }
 
   create() {
+    // Фон
+    this.add.image(360, 640, 'bg').setDisplaySize(720, 1280);
+
     this.buildUI();
     this.createBoard();
     this.setupInput();
   }
 
   buildUI() {
-    this.add.text(360, 40, this.bossData.name, { fontSize: '32px', color: '#ff3333', fontStyle: 'bold' }).setOrigin(0.5);
+    this.add.text(360, 40, this.bossData.name, { fontSize: '32px', color: '#ff3333', fontStyle: 'bold', stroke: '#000000', strokeThickness: 4 }).setOrigin(0.5);
     
+    // Полоска HP Босса
     this.add.rectangle(360, 80, 500, 30, 0x333333).setStrokeStyle(2, 0xffffff);
     this.bossHpBar = this.add.rectangle(110, 80, 500, 30, 0xff3333).setOrigin(0, 0.5);
     this.bossHpText = this.add.text(360, 80, `${this.bossHp}/${this.bossData.maxHp}`, { fontSize: '20px', color: '#ffffff' }).setOrigin(0.5);
 
-    // ВРЕМЕННАЯ ЗАГЛУШКА БОССА (КРАСНЫЙ КРУГ)
-    this.bossSprite = this.add.circle(360, 190, 70, 0xaa2222).setStrokeStyle(4, 0xffffff);
+    // Полоска Брони (появляется только если броня > 0)
+    if (this.bossArmor > 0) {
+      this.add.rectangle(360, 115, 500, 15, 0x333333).setStrokeStyle(2, 0xaaaaaa);
+      this.bossArmorBar = this.add.rectangle(110, 115, 500, 15, 0x3399ff).setOrigin(0, 0.5);
+      this.bossArmorText = this.add.text(360, 115, `Броня: ${this.bossArmor}`, { fontSize: '14px', color: '#ffffff' }).setOrigin(0.5);
+    }
+
+    // КАРТИНКА БОССА
+    this.bossSprite = this.add.image(360, 220, 'boss' + this.bossIndex);
+    this.bossSprite.setDisplaySize(160, 160);
 
     this.charContainers = [];
     this.renderTeamUI();
@@ -70,15 +85,12 @@ export default class BossBattleScene extends Phaser.Scene {
 
     this.team.forEach((char, index) => {
       const x = index === 0 ? 200 : 520;
-      const y = 380;
+      const y = 420;
       const isActive = (index === this.activeCharIndex);
       const borderColor = isActive ? 0x33cc66 : 0x444488;
       
       const bg = this.add.rectangle(x, y, 280, 120, 0x222244).setStrokeStyle(4, borderColor);
-      
-      // ВРЕМЕННАЯ ЗАГЛУШКА ПЕРСОНАЖА (СИНИЙ КРУГ)
       const charImg = this.add.circle(x - 90, y, 30, 0x4444aa).setStrokeStyle(2, 0xffffff);
-
       const name = this.add.text(x + 10, y - 30, `${char.name} ${isActive ? '(ХОД)' : ''}`, { fontSize: '20px', color: '#ffffff' }).setOrigin(0.5);
       
       const hpBarBg = this.add.rectangle(x - 110, y + 25, 220, 15, 0x333333).setOrigin(0, 0.5);
@@ -235,9 +247,41 @@ export default class BossBattleScene extends Phaser.Scene {
   }
 
   removeTiles(tiles) {
+    // Берем оружие из первой лопнувшей фишки (если собрали 3 разных - сработает то, что первое в массиве)
+    const weaponId = tiles[0].colorIndex;
+    const weapon = WEAPONS[weaponId];
+    
     this.shootProjectile(tiles[0].x, tiles[0].y, this.bossSprite.x, this.bossSprite.y, 0x33cc66);
-    const damage = tiles.length * 10;
-    this.bossHp = Math.max(0, this.bossHp - damage);
+    
+    // ЛОГИКА УРОНА С УЧЕТОМ БРОНИ
+    let damageToHp = weapon.damage;
+    let damageToArmor = 0;
+
+    // Если у оружия есть пробитие брони и у босса есть броня
+    if (weapon.armorPierce > 0 && this.bossArmor > 0) {
+      damageToArmor = weapon.armorPierce; // Снимаем только броню
+      damageToHp = 0;                     // ХП не трогаем
+    } 
+    // Если у оружия нет пробития, но есть броня - бьем только по броне (урон хп = 0)
+    else if (this.bossArmor > 0) {
+      damageToArmor = weapon.damage;      // Вся сила уходит в броню
+      damageToHp = 0;
+    }
+
+    // Применяем урон
+    if (damageToArmor > 0) {
+      this.bossArmor = Math.max(0, this.bossArmor - damageToArmor);
+    }
+    if (damageToHp > 0) {
+      this.bossHp = Math.max(0, this.bossHp - damageToHp);
+    }
+
+    // Эффект заморозки (если игрок собрал Ледяную мину)
+    if (weapon.stun) {
+      this.bossStunned = true;
+      this.showFloatingText(this.bossSprite.x, this.bossSprite.y - 50, 'ЗАМОРОЖЕН!', '#33ccff');
+    }
+
     this.updateBossHpUI();
 
     tiles.forEach(tile => {
@@ -277,7 +321,16 @@ export default class BossBattleScene extends Phaser.Scene {
       if (newMatches.length > 0) this.removeTiles(newMatches);
       else {
         if (this.bossHp <= 0) this.winGame();
-        else this.bossTurn();
+        else {
+          // Если босс заморожен, пропускаем его ход
+          if (this.bossStunned) {
+            this.bossStunned = false;
+            this.showFloatingText(360, 200, 'ХОД БОССА ПРОПУЩЕН', '#33ccff');
+            this.isBusy = false;
+          } else {
+            this.bossTurn();
+          }
+        }
       }
     });
   }
@@ -292,10 +345,21 @@ export default class BossBattleScene extends Phaser.Scene {
       return this.bossTurn();
     }
 
-    this.shootProjectile(this.bossSprite.x, this.bossSprite.y, 360, 380, 0xff3333);
-    const bossDamage = 40;
-    this.team[this.activeCharIndex].hp = Math.max(0, this.team[this.activeCharIndex].hp - bossDamage);
+    // Босс выбирает СЛУЧАЙНОЕ оружие из своего пула
+    const bossWeaponId = Phaser.Utils.Array.GetRandom(this.bossData.weapons);
+    const bossWeapon = WEAPONS[bossWeaponId];
+
+    this.shootProjectile(this.bossSprite.x, this.bossSprite.y, 360, 420, 0xff3333);
     
+    // Эффект заморозки от босса
+    if (bossWeapon.stun) {
+      this.playerStunned = true;
+      this.showFloatingText(360, 420, 'ВЫ ЗАМОРОЖЕНЫ!', '#33ccff');
+    }
+
+    this.team[this.activeCharIndex].hp = Math.max(0, this.team[this.activeCharIndex].hp - bossWeapon.damage);
+    this.showFloatingText(360, 420, `-${bossWeapon.damage}`, '#ff3333');
+
     this.time.delayedCall(400, () => {
       this.renderTeamUI();
       const aliveChars = this.team.filter(c => c.hp > 0);
@@ -305,7 +369,14 @@ export default class BossBattleScene extends Phaser.Scene {
           this.activeCharIndex = this.team.findIndex(c => c.hp > 0);
           this.renderTeamUI();
         }
-        this.isBusy = false;
+        
+        // Если игрок заморожен, босс ходит еще раз
+        if (this.playerStunned) {
+          this.playerStunned = false;
+          this.time.delayedCall(800, () => this.bossTurn()); // Небольшая пауза перед доп. ходом
+        } else {
+          this.isBusy = false;
+        }
       }
     });
   }
@@ -315,10 +386,21 @@ export default class BossBattleScene extends Phaser.Scene {
     this.tweens.add({ targets: proj, x: toX, y: toY, duration: 300, onComplete: () => proj.destroy() });
   }
 
+  showFloatingText(x, y, text, color) {
+    const txt = this.add.text(x, y, text, { fontSize: '24px', color: color, fontStyle: 'bold', stroke: '#000000', strokeThickness: 3 }).setOrigin(0.5);
+    this.tweens.add({ targets: txt, y: y - 50, alpha: 0, duration: 1000, onComplete: () => txt.destroy() });
+  }
+
   updateBossHpUI() {
     const percent = Math.max(0, this.bossHp / this.bossData.maxHp);
     this.bossHpBar.width = 500 * percent;
     this.bossHpText.setText(`${this.bossHp}/${this.bossData.maxHp}`);
+
+    if (this.bossArmorBar) {
+      const armorPercent = Math.max(0, this.bossArmor / this.bossData.armor);
+      this.bossArmorBar.width = 500 * armorPercent;
+      this.bossArmorText.setText(`Броня: ${this.bossArmor}`);
+    }
   }
 
   useMedkit() {
@@ -332,7 +414,8 @@ export default class BossBattleScene extends Phaser.Scene {
 
     this.medkitText.setText(`💊 x${Save.getMedkits()}`);
     this.renderTeamUI();
-    this.shootProjectile(690, 520, 360, 380, 0x33ff66);
+    this.shootProjectile(690, 520, 360, 420, 0x33ff66);
+    this.showFloatingText(360, 420, `+100`, '#33ff66');
   }
 
   winGame() {
