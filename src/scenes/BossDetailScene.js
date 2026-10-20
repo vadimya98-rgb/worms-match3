@@ -14,8 +14,8 @@ export default class BossDetailScene extends Phaser.Scene {
   }
 
   create() {
-    // Фон
     this.add.image(360, 640, 'bg').setDisplaySize(720, 1280);
+    this.add.rectangle(360, 640, 720, 1280, 0x000000, 0.5); // Затемнение фона
 
     const backBtn = this.add.text(30, 60, '← НАЗАД', {
       fontSize: '28px', color: '#ffffff', backgroundColor: '#333366', padding: { x: 20, y: 10 },
@@ -24,23 +24,27 @@ export default class BossDetailScene extends Phaser.Scene {
     backBtn.setInteractive();
     backBtn.on('pointerdown', () => this.scene.start('BossListScene'));
 
-    this.add.text(360, 150, this.boss.name, { 
+    // КАРТИНКА БОССА НА ЭКРАНЕ ВЫБОРА
+    const bossImg = this.add.image(360, 200, 'boss' + this.bossIndex);
+    bossImg.setDisplaySize(180, 180);
+
+    this.add.text(360, 330, this.boss.name, { 
       fontSize: '48px', color: '#ff3333', fontStyle: 'bold', stroke: '#000000', strokeThickness: 5 
     }).setOrigin(0.5);
-    this.add.text(360, 220, `Уровень: ${this.boss.level} | HP: ${this.boss.maxHp}`, { 
-      fontSize: '28px', color: '#ffffff', stroke: '#000000', strokeThickness: 4 
+    this.add.text(360, 390, `Уровень: ${this.boss.level} | HP: ${this.boss.maxHp}${this.boss.armor ? ` | Броня: ${this.boss.armor}` : ''}`, { 
+      fontSize: '24px', color: '#ffffff', stroke: '#000000', strokeThickness: 4 
     }).setOrigin(0.5);
-    this.add.text(360, 280, `Награда: ${this.boss.reward} Фузов`, { 
-      fontSize: '28px', color: '#ffcc66', stroke: '#000000', strokeThickness: 4 
+    this.add.text(360, 440, `Награда: ${this.boss.reward} Фузов`, { 
+      fontSize: '24px', color: '#ffcc66', stroke: '#000000', strokeThickness: 4 
     }).setOrigin(0.5);
     
-    this.add.text(360, 350, this.boss.description, { 
-      fontSize: '24px', color: '#ffffff', align: 'center', wordWrap: { width: 600 }, stroke: '#000000', strokeThickness: 4 
+    this.add.text(360, 490, this.boss.description, { 
+      fontSize: '22px', color: '#ffffff', align: 'center', wordWrap: { width: 600 }, stroke: '#000000', strokeThickness: 4 
     }).setOrigin(0.5);
 
-    this.add.rectangle(360, 420, 600, 2, 0xffffff);
+    this.add.rectangle(360, 530, 600, 2, 0xffffff);
 
-    this.add.text(360, 460, 'ВЫБЕРИТЕ ДО ДВУХ ПЕРСОНАЖЕЙ', { 
+    this.add.text(360, 570, 'ВЫБЕРИТЕ ДО ДВУХ ПЕРСОНАЖЕЙ', { 
       fontSize: '28px', color: '#ffffff', stroke: '#000000', strokeThickness: 4 
     }).setOrigin(0.5);
 
@@ -60,8 +64,8 @@ export default class BossDetailScene extends Phaser.Scene {
   }
 
   renderCharacterSelection() {
-    const startY = 540;
-    const spacing = 130;
+    const startY = 640;
+    const spacing = 120;
     let yOffset = 0;
 
     CHARACTERS.forEach(char => {
@@ -71,9 +75,9 @@ export default class BossDetailScene extends Phaser.Scene {
       const y = startY + yOffset;
       yOffset += spacing;
 
-      const bg = this.add.rectangle(360, y, 600, 110, 0x222244).setStrokeStyle(2, 0x6666aa);
+      const bg = this.add.rectangle(360, y, 600, 100, 0x222244, 0.9).setStrokeStyle(2, 0x6666aa);
       
-      this.add.text(80, y - 20, `${char.name} (Ур. ${state.level})`, { fontSize: '28px', color: '#ffffff' }).setOrigin(0, 0.5);
+      this.add.text(80, y - 15, `${char.name} (Ур. ${state.level})`, { fontSize: '28px', color: '#ffffff' }).setOrigin(0, 0.5);
       
       const hp = getCharacterMaxHp(char.id, state.level);
       this.add.text(80, y + 20, `HP: ${hp}`, { fontSize: '22px', color: '#aaaaaa' }).setOrigin(0, 0.5);
