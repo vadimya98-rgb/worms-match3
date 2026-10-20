@@ -27,7 +27,7 @@ export default class BossBattleScene extends Phaser.Scene {
           id: id, name: char.name, 
           hp: getCharacterMaxHp(id, state.level), 
           maxHp: getCharacterMaxHp(id, state.level),
-          antitoxinTurns: 0 // Новое свойство
+          antitoxinTurns: 0 
       };
     });
 
@@ -61,8 +61,7 @@ export default class BossBattleScene extends Phaser.Scene {
     this.add.text(360, 100, this.bossData.name, { fontSize: '40px', color: '#e74c3c', fontStyle: 'bold', stroke: '#000', strokeThickness: 6 }).setOrigin(0.5);
     
     this.bossSprite = this.add.image(360, 230, 'boss' + this.bossIndex).setDisplaySize(200, 200);
-    this.bossStartX = 360;
-    this.bossStartY = 230;
+    this.bossStartX = 360; this.bossStartY = 230;
 
     this.podiumGraphics = this.add.graphics();
     this.drawPodium();
@@ -77,20 +76,18 @@ export default class BossBattleScene extends Phaser.Scene {
     this.charContainers = [];
     this.renderTeamUI();
     
-    // КНОПКИ ПРЕДМЕТОВ (Увеличены)
-    this.createItemBtn(100, 1100, '💊', Save.getMedkits(), () => this.useItem('medkit'));
-    this.createItemBtn(100, 1180, '🧪', Save.getAntitoxins(), () => this.useItem('antitoxin'));
-  }
-
-  createItemBtn(x, y, icon, count, onClick) {
-    this.add.graphics().fillStyle(0xffffff, 0.15).fillRoundedRect(x - 70, y - 30, 140, 60, 15).lineStyle(3, 0x3498db, 1).strokeRoundedRect(x - 70, y - 30, 140, 60, 15);
-    this.add.text(x - 50, y, icon, { fontSize: '30px' }).setOrigin(0, 0.5);
-    let txt = this.add.text(x + 40, y, `x${count}`, { fontSize: '24px', color: '#3498db', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(1, 0.5);
+    // КНОПКИ ПРЕДМЕТОВ (С КАРТИНКАМИ)
+    let antiCount = Save.getAntitoxins ? Save.getAntitoxins() : 0;
     
-    if (icon === '💊') this.medkitText = txt;
-    else this.antitoxinText = txt;
+    this.add.graphics().fillStyle(0xffffff, 0.15).fillRoundedRect(20, 1080, 140, 60, 15).lineStyle(3, 0x3498db, 1).strokeRoundedRect(20, 1080, 140, 60, 15);
+    this.add.image(50, 1110, 'icon_medkit').setDisplaySize(36, 36);
+    this.medkitText = this.add.text(130, 1110, `x${Save.getMedkits()}`, { fontSize: '22px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(1, 0.5);
+    this.add.zone(90, 1110, 140, 60).setInteractive().on('pointerdown', () => this.useItem('medkit'));
 
-    this.add.zone(x, y, 140, 60).setInteractive().on('pointerdown', onClick);
+    this.add.graphics().fillStyle(0xffffff, 0.15).fillRoundedRect(20, 1160, 140, 60, 15).lineStyle(3, 0x00f0ff, 1).strokeRoundedRect(20, 1160, 140, 60, 15);
+    this.add.image(50, 1190, 'icon_antitoksin').setDisplaySize(36, 36);
+    this.antitoxinText = this.add.text(130, 1190, `x${antiCount}`, { fontSize: '22px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(1, 0.5);
+    this.add.zone(90, 1190, 140, 60).setInteractive().on('pointerdown', () => this.useItem('antitoxin'));
   }
 
   drawPodium() {
@@ -136,7 +133,8 @@ export default class BossBattleScene extends Phaser.Scene {
       const hpFill = this.add.graphics().fillStyle(0x2ecc71, 1).fillRoundedRect(x - 50 + 2, y - 93, 96 * (char.hp/char.maxHp), 12, 6);
 
       if (char.antitoxinTurns > 0) {
-          this.add.text(x, y - 120, '🧪', { fontSize: '20px' }).setOrigin(0.5);
+          const antiIcon = this.add.image(x, y - 120, 'icon_antitoksin').setDisplaySize(25, 25);
+          this.charContainers.push(antiIcon);
       }
 
       if (isActive && this.playerMovesCount >= 3 && !this.isBusy && !this.isGameOver) {
@@ -250,7 +248,6 @@ export default class BossBattleScene extends Phaser.Scene {
   removeTiles(tiles) {
     const weapon = WEAPONS[tiles[0].colorIndex];
     
-    // Исправлено: очищаем визуал и логику ДО анимации
     tiles.forEach(t => { 
         this.grid[t.gridRow][t.gridCol] = null; 
         t.bg.destroy(); 
@@ -383,7 +380,7 @@ export default class BossBattleScene extends Phaser.Scene {
     const ex = this.bossSprite.x;
     const ey = this.bossSprite.y;
     const sx = 360;
-    const sy = 1060;
+    const sy = 1010;
 
     let dmg = 150; 
     this.bossHp = Math.max(0, this.bossHp - dmg); 
@@ -428,13 +425,12 @@ export default class BossBattleScene extends Phaser.Scene {
     this.showTurnBanner('ХОД БОССА', 0xe74c3c);
 
     this.time.delayedCall(2000, () => {
-        // АНТИТОКСИН ЛЕЧИТ ПЕРЕД УДАРОМ БОССА
         this.team.forEach(char => {
             if (char.hp > 0 && char.antitoxinTurns > 0) {
                 let heal = 50;
                 char.hp = Math.min(char.maxHp, char.hp + heal);
                 char.antitoxinTurns--;
-                this.showFloatingText(360, 1060, `+${heal} 🧪`, '#00f0ff');
+                this.showFloatingText(360, 1010, `+${heal}`, '#00f0ff');
             }
         });
         this.renderTeamUI();
@@ -443,14 +439,14 @@ export default class BossBattleScene extends Phaser.Scene {
         const bossWeapon = WEAPONS[bossWeaponId];
         let bossDamage = Math.floor(bossWeapon.damage * 1.5 + this.bossData.level * 10); 
 
-        this.shootProjectile(bossWeaponId, this.bossSprite.x, this.bossSprite.y, 360, 1060, () => {
+        this.shootProjectile(bossWeaponId, this.bossSprite.x, this.bossSprite.y, 360, 1010, () => {
             this.cameras.main.shake(200, 0.03);
             
             this.team[this.activeCharIndex].hp = Math.max(0, this.team[this.activeCharIndex].hp - bossDamage);
-            this.showFloatingText(360, 1060, `-${bossDamage}`, '#ff0000'); 
+            this.showFloatingText(360, 1010, `-${bossDamage}`, '#ff0000'); 
             this.renderTeamUI();
             
-            if (bossWeapon.stun) this.showFloatingText(360, 1060, 'ЗАМОРОЖЕН', '#00ffff');
+            if (bossWeapon.stun) this.showFloatingText(360, 1010, 'ЗАМОРОЖЕН', '#00ffff');
 
             this.time.delayedCall(1000, () => { 
                 if (this.team[this.activeCharIndex].hp <= 0) this.loseGame(); 
@@ -479,13 +475,13 @@ export default class BossBattleScene extends Phaser.Scene {
         target.hp = Math.min(target.maxHp, target.hp + 300);
         Save.data.player.medkits -= 1; Save.flush();
         this.medkitText.setText(`x${Save.getMedkits()}`);
-        this.showFloatingText(360, 1060, `+300`, '#2ecc71');
+        this.showFloatingText(360, 1010, `+300`, '#2ecc71');
     } else if (type === 'antitoxin') {
-        if (Save.getAntitoxins() <= 0) return;
+        if (!Save.getAntitoxins || Save.getAntitoxins() <= 0) return;
         target.antitoxinTurns = 3;
         Save.data.player.antitoxins -= 1; Save.flush();
-        this.antitoxinText.setText(`x${Save.getAntitoxins()}`);
-        this.showFloatingText(360, 1060, `АНТИТОКСИН!`, '#00f0ff');
+        this.antitoxinText.setText(`x${Save.getAntitoxins ? Save.getAntitoxins() : 0}`);
+        this.showFloatingText(360, 1010, `АНТИТОКСИН!`, '#00f0ff');
     }
     this.renderTeamUI();
   }
@@ -518,7 +514,10 @@ export default class BossBattleScene extends Phaser.Scene {
     this.add.rectangle(360, 640, 720, 1280, 0x000000, 0.85).setDepth(100);
     this.add.graphics().setDepth(101).fillStyle(0x2c3e50, 0.95).fillRoundedRect(160, 440, 400, 400, 30).lineStyle(4, 0x2ecc71, 1).strokeRoundedRect(160, 440, 400, 400, 30);
     this.add.text(360, 520, 'ПОБЕДА!', { fontSize: '56px', color: '#2ecc71', fontStyle: 'bold', stroke: '#000', strokeThickness: 6 }).setOrigin(0.5).setDepth(102);
-    this.add.text(360, 620, `Награда: ${this.bossData.reward} Фузов`, { fontSize: '32px', color: '#f1c40f', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5).setDepth(102);
+    
+    this.add.image(290, 620, 'icon_fuz').setDisplaySize(40, 40).setDepth(102);
+    this.add.text(340, 620, `+${this.bossData.reward}`, { fontSize: '32px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 4 }).setOrigin(0, 0.5).setDepth(102);
+    
     const btn = this.add.container(360, 740).setDepth(102);
     const bg = this.add.graphics().fillStyle(0x2ecc71, 1).fillRoundedRect(-150, -40, 300, 80, 30).lineStyle(6, 0xffffff, 1).strokeRoundedRect(-150, -40, 300, 80, 30);
     btn.add([bg, this.add.text(0, 0, 'ЗАБРАТЬ', { fontSize: '36px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 5 }).setOrigin(0.5)]);
