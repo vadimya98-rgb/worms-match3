@@ -19,8 +19,8 @@ export default class ShopScene extends Phaser.Scene {
   buildHeader() {
     this.createCandyButton(100, 50, 140, 50, '←', 0x3498db, () => this.scene.start('HubScene'));
     this.add.graphics().fillStyle(0xffffff, 0.15).fillRoundedRect(520, 25, 180, 50, 15).lineStyle(2, 0xffcc00, 0.8).strokeRoundedRect(520, 25, 180, 50, 15);
-    this.add.text(545, 50, '💰', { fontSize: '28px' }).setOrigin(0, 0.5);
-    this.fuzzText = this.add.text(590, 50, `${Save.getFuzz()}`, { fontSize: '24px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0, 0.5);
+    this.add.image(545, 50, 'icon_fuz').setDisplaySize(25, 25);
+    this.fuzzText = this.add.text(580, 50, `${Save.getFuzz()}`, { fontSize: '24px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0, 0.5);
   }
 
   buildTabs() {
@@ -85,7 +85,12 @@ export default class ShopScene extends Phaser.Scene {
     const bMain = this.add.graphics().fillStyle(btnColor, 1).fillRoundedRect(-70, -30, 140, 60, 15);
     
     btn.add([bBg, bMain, this.add.text(0, -12, label, { fontSize: '16px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 2 }).setOrigin(0.5)]);
-    if (label !== 'MAX') btn.add(this.add.text(0, 10, `${cost}💰`, { fontSize: '16px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 2 }).setOrigin(0.5));
+    
+    // Иконка и цена вместо смайлика
+    if (label !== 'MAX') {
+        btn.add(this.add.image(-15, 10, 'icon_fuz').setDisplaySize(18, 18));
+        btn.add(this.add.text(10, 10, `${cost}`, { fontSize: '16px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 2 }).setOrigin(0.5));
+    }
 
     btn.setSize(140, 60);
     if (label !== 'MAX' && canAfford) {
@@ -108,8 +113,9 @@ export default class ShopScene extends Phaser.Scene {
 
     // АПТЕЧКА
     this.container.add(this.add.graphics().fillStyle(0xffffff, 0.1).fillRoundedRect(40, y, 640, 130, 20).lineStyle(2, 0xffffff, 0.3).strokeRoundedRect(40, y, 640, 130, 20));
-    this.container.add(this.add.text(70, y + 30, '💊 Аптечка', { fontSize: '28px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }));
-    this.container.add(this.add.text(70, y + 75, `В наличии: x${Save.getMedkits()} | Лечит 300 ХП`, { fontSize: '18px', color: '#2ecc71', fontStyle: 'bold' }));
+    this.container.add(this.add.image(70, y + 40, 'icon_medkit').setDisplaySize(40, 40));
+    this.container.add(this.add.text(110, y + 30, 'Аптечка', { fontSize: '26px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }));
+    this.container.add(this.add.text(70, y + 85, `В наличии: x${Save.getMedkits()} | Лечит 300 ХП`, { fontSize: '16px', color: '#2ecc71', fontStyle: 'bold' }));
     this.createItemButton(600, y + 65, medkitPrice, Save.getFuzz() >= medkitPrice, () => {
         if (Save.spendFuzz(medkitPrice)) { Save.addMedkits(1); this.updateFuzzUI(); this.refreshContent(); }
     });
@@ -117,9 +123,11 @@ export default class ShopScene extends Phaser.Scene {
     y += 150;
 
     // АНТИТОКСИН
+    let antiCount = Save.getAntitoxins ? Save.getAntitoxins() : 0;
     this.container.add(this.add.graphics().fillStyle(0xffffff, 0.1).fillRoundedRect(40, y, 640, 130, 20).lineStyle(2, 0xffffff, 0.3).strokeRoundedRect(40, y, 640, 130, 20));
-    this.container.add(this.add.text(70, y + 30, '🧪 Антитоксин', { fontSize: '28px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }));
-    this.container.add(this.add.text(70, y + 75, `В наличии: x${Save.getAntitoxins()} | Лечит 50 ХП (3 хода)`, { fontSize: '18px', color: '#00f0ff', fontStyle: 'bold' }));
+    this.container.add(this.add.image(70, y + 40, 'icon_antitoksin').setDisplaySize(40, 40));
+    this.container.add(this.add.text(110, y + 30, 'Антитоксин', { fontSize: '26px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }));
+    this.container.add(this.add.text(70, y + 85, `В наличии: x${antiCount} | Лечит 50 ХП (3 хода)`, { fontSize: '16px', color: '#00f0ff', fontStyle: 'bold' }));
     this.createItemButton(600, y + 65, antitoxinPrice, Save.getFuzz() >= antitoxinPrice, () => {
         if (Save.spendFuzz(antitoxinPrice)) { Save.addAntitoxins(1); this.updateFuzzUI(); this.refreshContent(); }
     });
@@ -130,7 +138,11 @@ export default class ShopScene extends Phaser.Scene {
     const btn = this.add.container(x, y);
     const bBg = this.add.graphics().fillStyle(Phaser.Display.Color.IntegerToColor(btnColor).darken(20).color, 1).fillRoundedRect(-70, -25, 140, 60, 15);
     const bMain = this.add.graphics().fillStyle(btnColor, 1).fillRoundedRect(-70, -30, 140, 60, 15);
-    btn.add([bBg, bMain, this.add.text(0, -12, 'КУПИТЬ', { fontSize: '16px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 2 }).setOrigin(0.5), this.add.text(0, 10, `${price}💰`, { fontSize: '16px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 2 }).setOrigin(0.5)]);
+    
+    btn.add([bBg, bMain, this.add.text(0, -12, 'КУПИТЬ', { fontSize: '16px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 2 }).setOrigin(0.5)]);
+    btn.add(this.add.image(-15, 10, 'icon_fuz').setDisplaySize(18, 18));
+    btn.add(this.add.text(10, 10, `${price}`, { fontSize: '16px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 2 }).setOrigin(0.5));
+    
     btn.setSize(140, 60);
     if (canAfford) btn.setInteractive({ useHandCursor: true }).on('pointerdown', onClick);
     this.container.add(btn);
