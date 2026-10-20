@@ -5,8 +5,9 @@ import HubScene from './scenes/HubScene.js';
 import StubScene from './scenes/StubScene.js';
 import FarmScene from './scenes/FarmScene.js';
 import ShopScene from './scenes/ShopScene.js';
-import BossListScene from './scenes/BossListScene.js';     // Импорт карты боссов
-import BossDetailScene from './scenes/BossDetailScene.js'; // Импорт деталей босса
+import BossListScene from './scenes/BossListScene.js';
+import BossDetailScene from './scenes/BossDetailScene.js';
+import BossBattleScene from './scenes/BossBattleScene.js'; // Импортируем бой
 
 const config = {
   type: Phaser.AUTO,
@@ -26,8 +27,9 @@ const config = {
     StubScene, 
     FarmScene,
     ShopScene,
-    BossListScene,   // Добавили карту
-    BossDetailScene  // Добавили детали
+    BossListScene,
+    BossDetailScene,
+    BossBattleScene // Добавили сцену боя
   ],
 };
 
