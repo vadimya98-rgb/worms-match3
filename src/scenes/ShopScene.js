@@ -72,7 +72,6 @@ export default class ShopScene extends Phaser.Scene {
       this.container.add(this.add.text(150, y + 20, state.owned ? `${char.name} (Ур. ${state.level})` : char.name, { fontSize: '24px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }));
       
       if (state.owned) {
-        // ЯРКИЙ ТЕКСТ
         this.container.add(this.add.text(150, y + 65, `HP: ${getCharacterMaxHp(char.id, state.level)}`, { fontSize: '18px', color: '#2ecc71', fontStyle: 'bold', stroke: '#000', strokeThickness: 4 }));
         let armorVal = getCharacterMaxArmor(char.id, state.armorLevel);
         this.container.add(this.add.text(150, y + 95, `Броня: ${armorVal}`, { fontSize: '18px', color: '#3498db', fontStyle: 'bold', stroke: '#000', strokeThickness: 4 }));
@@ -90,7 +89,6 @@ export default class ShopScene extends Phaser.Scene {
               if (hpCost !== Infinity && Save.spendFuzz(hpCost)) { Save.upgradeCharacter(char.id); this.updateFuzzUI(); this.refreshContent(); }
           });
 
-          // КНОПКА БРОНИ (ПОЯВЛЯЕТСЯ ТОЛЬКО У КУПЛЕННЫХ)
           if (isArmorUnlocked) {
               const armorCost = getArmorUpgradeCost(char.id, state.armorLevel);
               this.createCharButton(600, y + 115, armorCost === Infinity ? 'БРОНЯ MAX' : 'УЛУЧШИТЬ БР.', armorCost, armorCost !== Infinity && Save.getFuzz() >= armorCost, () => {
@@ -132,22 +130,27 @@ export default class ShopScene extends Phaser.Scene {
 
   renderBoosts() {
     let y = 220;
+    const medkitPrice = 150;
+    const antitoxinPrice = 200;
+
+    // АПТЕЧКА
     this.container.add(this.add.graphics().fillStyle(0xffffff, 0.1).fillRoundedRect(40, y, 640, 130, 20).lineStyle(2, 0xffffff, 0.3).strokeRoundedRect(40, y, 640, 130, 20));
     this.container.add(this.add.image(70, y + 40, 'icon_medkit').setDisplaySize(40, 40));
     this.container.add(this.add.text(110, y + 30, 'Аптечка', { fontSize: '26px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }));
-    this.container.add(this.add.text(70, y + 85, `В наличии: x${Save.getMedkits()} | Лечит 300 ХП`, { fontSize: '16px', color: '#2ecc71', fontStyle: 'bold' }));
-    this.createItemButton(600, y + 65, 150, Save.getFuzz() >= 150, () => {
-        if (Save.spendFuzz(150)) { Save.addMedkits(1); this.updateFuzzUI(); this.refreshContent(); }
+    this.container.add(this.add.text(70, y + 85, `В наличии: x${Save.getMedkits()} | Лечит 200 ХП`, { fontSize: '16px', color: '#2ecc71', fontStyle: 'bold' }));
+    this.createItemButton(600, y + 65, medkitPrice, Save.getFuzz() >= medkitPrice, () => {
+        if (Save.spendFuzz(medkitPrice)) { Save.addMedkits(1); this.updateFuzzUI(); this.refreshContent(); }
     });
     y += 150;
 
+    // АНТИТОКСИН
     let antiCount = Save.getAntitoxins ? Save.getAntitoxins() : 0;
     this.container.add(this.add.graphics().fillStyle(0xffffff, 0.1).fillRoundedRect(40, y, 640, 130, 20).lineStyle(2, 0xffffff, 0.3).strokeRoundedRect(40, y, 640, 130, 20));
     this.container.add(this.add.image(70, y + 40, 'icon_antitoksin').setDisplaySize(40, 40));
     this.container.add(this.add.text(110, y + 30, 'Антитоксин', { fontSize: '26px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }));
-    this.container.add(this.add.text(70, y + 85, `В наличии: x${antiCount} | Лечит 50 ХП (3 хода)`, { fontSize: '16px', color: '#00f0ff', fontStyle: 'bold' }));
-    this.createItemButton(600, y + 65, 250, Save.getFuzz() >= 250, () => {
-        if (Save.spendFuzz(250)) { Save.addAntitoxins(1); this.updateFuzzUI(); this.refreshContent(); }
+    this.container.add(this.add.text(70, y + 85, `В наличии: x${antiCount} | Лечит 70 ХП (4 хода)`, { fontSize: '16px', color: '#00f0ff', fontStyle: 'bold' }));
+    this.createItemButton(600, y + 65, antitoxinPrice, Save.getFuzz() >= antitoxinPrice, () => {
+        if (Save.spendFuzz(antitoxinPrice)) { Save.addAntitoxins(1); this.updateFuzzUI(); this.refreshContent(); }
     });
   }
 
