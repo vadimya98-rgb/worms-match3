@@ -63,7 +63,6 @@ export default class ShopScene extends Phaser.Scene {
     CHARACTERS.forEach((char) => {
       const state = Save.getCharacter(char.id);
       
-      // Увеличили высоту карточки для 2х кнопок
       const bg = this.add.graphics().fillStyle(0xffffff, 0.1).fillRoundedRect(40, y, 640, 160, 20).lineStyle(2, 0xffffff, 0.3).strokeRoundedRect(40, y, 640, 160, 20);
       this.container.add(bg);
 
@@ -85,7 +84,6 @@ export default class ShopScene extends Phaser.Scene {
               if (Save.spendFuzz(char.price)) { Save.ownCharacter(char.id); this.updateFuzzUI(); this.refreshContent(); }
           });
       } else {
-          // Кнопка ХП
           const hpCost = getUpgradeCost(char.id, state.level);
           this.createCharButton(600, y + 45, hpCost === Infinity ? 'HP MAX' : 'УЛУЧШИТЬ ХП', hpCost, hpCost !== Infinity && Save.getFuzz() >= hpCost, () => {
               if (hpCost !== Infinity && Save.spendFuzz(hpCost)) { Save.upgradeCharacter(char.id); this.updateFuzzUI(); this.refreshContent(); }
@@ -98,11 +96,15 @@ export default class ShopScene extends Phaser.Scene {
                   if (armorCost !== Infinity && Save.spendFuzz(armorCost)) { Save.upgradeArmor(char.id); this.updateFuzzUI(); this.refreshContent(); }
               }, 0x3498db);
           } else {
-              const lockText = this.add.text(600, y + 115, 'БРОНЯ\n(3-й босс)', { fontSize: '12px', color: '#7f8c8d', align: 'center', fontStyle: 'bold' }).setOrigin(0.5);
-              this.container.add(lockText);
+              // Заблокированная кнопка
+              const btn = this.add.container(600, y + 115);
+              const bBg = this.add.graphics().fillStyle(0x333333, 1).fillRoundedRect(-80, -20, 160, 45, 12);
+              const bMain = this.add.graphics().fillStyle(0x555555, 1).fillRoundedRect(-80, -25, 160, 45, 12);
+              btn.add([bBg, bMain, this.add.text(0, -10, '🔒 ЗАКРЫТО', { fontSize: '14px', color: '#888', fontStyle: 'bold', stroke: '#000', strokeThickness: 2 }).setOrigin(0.5)]);
+              this.container.add(btn);
           }
       }
-      y += 175; // Увеличили шаг
+      y += 175;
     });
   }
 
