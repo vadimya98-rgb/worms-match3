@@ -22,18 +22,26 @@ export default class BossBattleScene extends Phaser.Scene {
     this.playerMovesCount = 0;
     this.bleedTurns = 0; this.poisonTurns = 0;
     
-    this.team = data.team.map(id => {
+    // ЗАЩИТА ОТ ПУСТЫХ ПЕРСОНАЖЕЙ (БАГ С ЗАВИСАНИЕМ)
+    const validTeam = data.team.filter(id => id !== null);
+    
+    this.team = validTeam.map(id => {
       const char = getCharacterData(id);
       const state = Save.getCharacter(id);
+      
+      // Защита, если вдруг данные не найдены
+      if (!char) return null; 
+
       let maxHp = getCharacterMaxHp(id, state.level);
       let maxArmor = getCharacterMaxArmor(id, state.armorLevel);
+      
       return { 
           id: id, name: char.name, 
           hp: maxHp, maxHp: maxHp,
           armor: maxArmor, maxArmor: maxArmor, // ДОБАВЛЕНА БРОНЯ
           antitoxinTurns: 0 
       };
-    });
+    }).filter(c => c !== null); // Убираем возможные null после маппинга
 
     this.activeCharIndex = 0; this.selectedTile = null; this.grid = [];
     this.pool = [0, 1, 2, 3, 4, 5];
@@ -70,10 +78,12 @@ export default class BossBattleScene extends Phaser.Scene {
     this.podiumGraphics = this.add.graphics();
     this.drawPodium();
 
+    // ВЕРТИКАЛЬНАЯ ПОЛОСКА HP СЛЕВА
     this.add.rectangle(180, 220, 24, 140, 0x333333).setStrokeStyle(2, 0xffffff);
     this.bossHpBar = this.add.rectangle(180, 290, 20, 136, 0xff3333).setOrigin(0.5, 1);
     this.bossHpText = this.add.text(180, 300, `${this.bossHp}`, { fontSize: '16px', color: '#ffffff', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5, 0);
 
+    // ВЕРТИКАЛЬНАЯ ПОЛОСКА БРОНИ СПРАВА (если есть)
     if (this.bossArmor > 0) {
         this.add.rectangle(540, 220, 16, 140, 0x333333).setStrokeStyle(2, 0xaaaaaa);
         this.bossArmorBar = this.add.rectangle(540, 290, 12, 136, 0x3399db).setOrigin(0.5, 1);
@@ -87,7 +97,7 @@ export default class BossBattleScene extends Phaser.Scene {
     this.charContainers = [];
     this.renderTeamUI();
     
-    // ВОЗВРАЩАЕМ КНОПКИ НА ПРЕЖНИЕ МЕСТА
+    // КНОПКИ ПРЕДМЕТОВ
     let antiCount = Save.getAntitoxins ? Save.getAntitoxins() : 0;
     this.add.graphics().fillStyle(0xffffff, 0.15).fillRoundedRect(20, 1080, 140, 60, 15).lineStyle(3, 0x3498db, 1).strokeRoundedRect(20, 1080, 140, 60, 15);
     this.add.image(50, 1110, 'icon_medkit').setDisplaySize(36, 36);
