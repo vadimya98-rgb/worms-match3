@@ -7,45 +7,49 @@ export default class BossBattleScene extends Phaser.Scene {
   constructor() { super({ key: 'BossBattleScene' }); }
 
   init(data) {
-    this.bossData = BOSSES[data.bossIndex];
-    this.bossIndex = data.bossIndex;
-    
-    this.COLS = 8; this.ROWS = 8;
-    this.TILE_SIZE = 72; 
-    this.GAP = 4;
-    this.OFFSET_X = (720 - this.COLS * this.TILE_SIZE) / 2;
-    this.OFFSET_Y = 350; 
+  this.bossData = BOSSES[data.bossIndex];
+  this.bossIndex = data.bossIndex;
+  
+  this.COLS = 8; this.ROWS = 8;
+  this.TILE_SIZE = 72; 
+  this.GAP = 4;
+  this.OFFSET_X = (720 - this.COLS * this.TILE_SIZE) / 2;
+  this.OFFSET_Y = 350; 
 
-    this.bossHp = this.bossData.maxHp;
-    this.bossArmor = this.bossData.armor;
-    this.isBusy = false; this.isGameOver = false; this.isPaused = false;
-    this.playerMovesCount = 0;
-    this.bleedTurns = 0; this.poisonTurns = 0;
-    
-    // ЗАЩИТА ОТ ПУСТЫХ ПЕРСОНАЖЕЙ (БАГ С ЗАВИСАНИЕМ)
-    const validTeam = data.team.filter(id => id !== null);
-    
-    this.team = validTeam.map(id => {
-      const char = getCharacterData(id);
-      const state = Save.getCharacter(id);
-      
-      // Защита, если вдруг данные не найдены
-      if (!char) return null; 
+  this.bossHp = this.bossData.maxHp;
+  this.bossArmor = this.bossData.armor;
+  this.isBusy = false; this.isGameOver = false; this.isPaused = false;
+  this.playerMovesCount = 0;
+  this.bleedTurns = 0; this.poisonTurns = 0;
+  
+  // СТРОГАЯ ЗАЩИТА ОТ ПУСТЫХ ДАННЫХ
+  const validTeam = data.team ? data.team.filter(id => id !== null) : [];
+  
+  this.team = validTeam.map(id => {
+    const char = getCharacterData(id);
+    const state = Save.getCharacter(id);
+    if (!char) return null; 
 
-      let maxHp = getCharacterMaxHp(id, state.level);
-      let maxArmor = getCharacterMaxArmor(id, state.armorLevel);
-      
-      return { 
-          id: id, name: char.name, 
-          hp: maxHp, maxHp: maxHp,
-          armor: maxArmor, maxArmor: maxArmor, // ДОБАВЛЕНА БРОНЯ
-          antitoxinTurns: 0 
-      };
-    }).filter(c => c !== null); // Убираем возможные null после маппинга
+    let maxHp = getCharacterMaxHp(id, state.level);
+    let maxArmor = getCharacterMaxArmor(id, state.armorLevel);
+    
+    return { 
+        id: id, name: char.name, 
+        hp: maxHp, maxHp: maxHp,
+        armor: maxArmor, maxArmor: maxArmor,
+        antitoxinTurns: 0 
+    };
+  }).filter(c => c !== null);
 
-    this.activeCharIndex = 0; this.selectedTile = null; this.grid = [];
-    this.pool = [0, 1, 2, 3, 4, 5];
+  // ЕСЛИ КОМАНДА ПУСТАЯ, ВЫКИДЫВАЕМ В МЕНЮ (ПРЕДОТВРАЩАЕТ ЗАВИСАНИЕ)
+  if (this.team.length === 0) {
+      this.scene.start('BossListScene');
+      return;
   }
+
+  this.activeCharIndex = 0; this.selectedTile = null; this.grid = [];
+  this.pool = [0, 1, 2, 3, 4, 5];
+}
 
   create() {
     if (!this.textures.exists('white_pixel')) {
