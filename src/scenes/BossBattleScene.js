@@ -44,7 +44,8 @@ export default class BossBattleScene extends Phaser.Scene {
     this.createBoard();
     this.setupInput();
     
-    this.showTurnBanner('ВАШ ХОД', '#2ecc71');
+    // Передаем числовой цвет, а не строку
+    this.showTurnBanner('ВАШ ХОД', 0x2ecc71);
   }
 
   buildUI() {
@@ -260,13 +261,11 @@ export default class BossBattleScene extends Phaser.Scene {
     this.time.delayedCall(3500, () => this.applyGravity());
   }
 
-  showTurnBanner(text, color) {
+  // Принимает числовой цвет
+  showTurnBanner(text, colorNum) {
     this.isBusy = true;
-    // Конвертируем строку цвета в число для графики, чтобы избежать ошибок
-    let colorNum = Phaser.Display.Color.HexStringToColor(color).color;
-
     const bannerBg = this.add.graphics().fillStyle(0x000000, 0.8).fillRoundedRect(160, 600, 400, 100, 30).lineStyle(4, colorNum, 1).strokeRoundedRect(160, 600, 400, 100, 30).setDepth(200);
-    const txt = this.add.text(360, 650, text, { fontSize: '40px', color: color, fontStyle: 'bold', stroke: '#000', strokeThickness: 5 }).setOrigin(0.5).setDepth(201);
+    const txt = this.add.text(360, 650, text, { fontSize: '40px', color: '#ffffff', fontStyle: 'bold', stroke: '#000', strokeThickness: 5 }).setOrigin(0.5).setDepth(201);
     
     bannerBg.setScale(0); txt.setScale(0);
     this.tweens.add({ targets: [bannerBg, txt], scale: 1, duration: 400, ease: 'Back.easeOut' });
@@ -347,17 +346,14 @@ export default class BossBattleScene extends Phaser.Scene {
         if (this.bossHp <= 0) this.winGame();
         else if (this.bossStunned) { 
             this.bossStunned = false; 
-            this.showTurnBanner('ХОД БОССА ПРОПУЩЕН', '#00ffff');
-            this.time.delayedCall(1500, () => this.showTurnBanner('ВАШ ХОД', '#2ecc71'));
+            this.showTurnBanner('ХОД БОССА ПРОПУЩЕН', 0x00ffff);
+            this.time.delayedCall(1500, () => this.showTurnBanner('ВАШ ХОД', 0x2ecc71));
         }
         else this.bossTurn();
       }
     });
   }
 
-  // ==========================================
-  // БЕЗОПАСНЫЕ УНИКАЛЬНЫЕ КОНТР-УДАРЫ
-  // ==========================================
   useCounterAttack() {
     if (this.playerMovesCount < 3 || this.isBusy || this.isGameOver || this.isPaused) return;
     this.isBusy = true; 
@@ -377,67 +373,57 @@ export default class BossBattleScene extends Phaser.Scene {
 
     if (activeChar.id === 'dragon') {
         this.cameras.main.shake(300, 0.05);
-        // ОГОНЬ: летит струя пламени (частицы)
-        let fire = this.add.particles(sx, sy, 'white_pixel', {
-            speed: 500, angle: { min: 260, max: 280 },
-            scale: { start: 2, end: 0 }, lifespan: 800, quantity: 5,
-            tint: 0xff5500, // Безопасный одиночный цвет
-            blendMode: 'ADD'
-        }).setDepth(150);
         
-        this.time.delayedCall(800, () => {
-            fire.destroy();
+        // ОГОНЬ: Круги
+        for(let i=0; i<5; i++) {
+            let fire = this.add.circle(sx + Phaser.Math.Between(-30, 30), sy, 15, 0xff5500).setDepth(150);
+            this.tweens.add({
+                targets: fire, x: ex + Phaser.Math.Between(-20, 20), y: ey + Phaser.Math.Between(-20, 20),
+                duration: 600 + i * 100, ease: 'Power2', onComplete: () => fire.destroy()
+            });
+        }
+        
+        this.time.delayedCall(1000, () => {
             this.hitBoss();
-            this.bossSprite.setTint(0xff5500); // Босс краснеет
-            // Остаточное горение на боссе
-            let fireOnBoss = this.add.particles(ex, ey, 'white_pixel', {
-                speed: 100, lifespan: 1000, tint: 0xff5500, blendMode: 'ADD'
-            }).setDepth(160);
-            this.time.delayedCall(1500, () => { fireOnBoss.destroy(); this.bossSprite.clearTint(); this.endCounterAttack(); });
+            this.bossSprite.setTint(0xff5500); 
+            this.time.delayedCall(1000, () => { this.bossSprite.clearTint(); this.endCounterAttack(); });
         });
 
     } else if (activeChar.id === 'cat') {
         this.cameras.main.shake(200, 0.08);
-        this.cameras.main.flash(200, 255, 255, 255); // Белая вспышка
+        this.cameras.main.flash(200, 255, 255, 255);
         
-        // ЦАРАПИНЫ: 3 белые линии поверх босса
         let scratch = this.add.graphics().setDepth(160);
-        scratch.lineStyle(6, 0xffffff, 1);
+        scratch.lineStyle(6, 0xff0000, 1); 
         scratch.lineBetween(ex - 40, ey - 40, ex + 40, ey + 40);
         scratch.lineBetween(ex - 20, ey - 50, ex + 60, ey + 30);
         scratch.lineBetween(ex - 60, ey - 30, ex + 20, ey + 50);
 
-        this.bossSprite.setTint(0xff0000); // Босс краснеет
+        this.bossSprite.setTint(0xff0000);
         
         this.time.delayedCall(300, () => {
             this.hitBoss();
-            // Царапины медленно исчезают
             this.tweens.add({ targets: scratch, alpha: 0, duration: 800, onComplete: () => { scratch.destroy(); this.bossSprite.clearTint(); this.endCounterAttack(); } });
         });
 
     } else if (activeChar.id === 'robot') {
         this.cameras.main.shake(300, 0.05);
-        this.cameras.main.flash(300, 0, 255, 255); // Синяя вспышка
+        this.cameras.main.flash(300, 0, 255, 255);
 
-        // ЭЛЕКТРИЧЕСТВО: Зигзаг от робота к боссу
         let lightning = this.add.graphics().setDepth(160);
-        lightning.lineStyle(4, 0x00ffff, 1);
+        lightning.lineStyle(6, 0x00ffff, 1);
         lightning.beginPath();
         lightning.moveTo(sx, sy);
-        let curX = sx, curY = sy;
-        for(let i=1; i<=5; i++) {
-            let stepX = Phaser.Math.Linear(sx, ex, i/5) + Phaser.Math.Between(-30, 30);
-            let stepY = Phaser.Math.Linear(sy, ey, i/5);
-            lightning.lineTo(stepX, stepY);
+        for(let i=1; i<=8; i++) {
+            lightning.lineTo(Phaser.Math.Linear(sx, ex, i/8) + Phaser.Math.Between(-40, 40), Phaser.Math.Linear(sy, ey, i/8));
         }
         lightning.strokePath();
 
-        this.bossSprite.setTint(0x00ffff); // Босс становится голубым
+        this.bossSprite.setTint(0x00ffff);
 
         this.time.delayedCall(300, () => {
             lightning.destroy();
             this.hitBoss();
-            this.spawnSparks(ex, ey, 0x00ffff);
             this.tweens.add({ targets: this.bossSprite, alpha: 0.5, duration: 100, yoyo: true, repeat: 3, onComplete: () => {
                 this.bossSprite.setAlpha(1);
                 this.bossSprite.clearTint();
@@ -447,20 +433,21 @@ export default class BossBattleScene extends Phaser.Scene {
 
     } else if (activeChar.id === 'zombie') {
         this.cameras.main.shake(200, 0.03);
-        // ЯД: Зеленый сгусток летит в босса
         let proj = this.add.circle(sx, sy, 30, 0x00ff00).setDepth(150);
         
         this.tweens.add({ targets: proj, x: ex, y: ey, duration: 800, ease: 'Power2', onComplete: () => {
             proj.destroy();
             this.hitBoss();
-            // Зеленое облако вокруг босса
-            let poison = this.add.particles(ex, ey, 'white_pixel', {
-                speed: 50, lifespan: 1500, tint: 0x00ff00, alpha: { start: 0.8, end: 0 }
-            }).setDepth(160);
-            this.bossSprite.setTint(0x00ff00); // Босс зеленеет
+            this.bossSprite.setTint(0x00ff00);
+            
+            for(let i=0; i<10; i++) {
+                let bubble = this.add.circle(ex + Phaser.Math.Between(-50, 50), ey + Phaser.Math.Between(-50, 50), Phaser.Math.Between(5, 15), 0x00ff00).setDepth(160);
+                this.tweens.add({
+                    targets: bubble, y: bubble.y - Phaser.Math.Between(20, 60), alpha: 0, duration: 1000, onComplete: () => bubble.destroy()
+                });
+            }
             
             this.time.delayedCall(1500, () => { 
-                poison.destroy(); 
                 this.bossSprite.clearTint(); 
                 this.endCounterAttack(); 
             });
@@ -478,7 +465,7 @@ export default class BossBattleScene extends Phaser.Scene {
   bossTurn() {
     if (this.isGameOver || this.isPaused) return;
     
-    this.showTurnBanner('ХОД БОССА', '#e74c3c');
+    this.showTurnBanner('ХОД БОССА', 0xe74c3c);
 
     this.time.delayedCall(2000, () => {
         if (this.poisonTurns > 0) { this.bossHp = Math.max(0, this.bossHp - 20); this.poisonTurns--; this.updateBossHpUI(); this.hitBoss(); }
@@ -500,7 +487,7 @@ export default class BossBattleScene extends Phaser.Scene {
             this.time.delayedCall(1000, () => { 
                 if (this.team[this.activeCharIndex].hp <= 0) this.loseGame(); 
                 else {
-                    this.showTurnBanner('ВАШ ХОД', '#2ecc71');
+                    this.showTurnBanner('ВАШ ХОД', 0x2ecc71);
                 }
             });
         });
