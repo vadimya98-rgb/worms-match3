@@ -56,9 +56,14 @@ export default class DailyBonusScene extends Phaser.Scene {
 
       this.add.text(x, y + 25, `День ${day}`, { fontSize: '20px', color: '#ffffff', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5);
       
-      // Вместо текста смайлика рисуем иконку и текст рядом
-      this.add.image(x - 30, y + 65, reward.icon).setDisplaySize(30, 30);
-      this.add.text(x + 10, y + 65, reward.text, { fontSize: '24px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5);
+      // ИСПРАВЛЕН ТЕКСТ 7 ДНЯ
+      if (isLast) {
+          this.add.image(x - 80, y + 65, reward.icon).setDisplaySize(35, 35);
+          this.add.text(x + 30, y + 65, reward.text, { fontSize: '28px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5);
+      } else {
+          this.add.image(x - 30, y + 65, reward.icon).setDisplaySize(30, 30);
+          this.add.text(x + 10, y + 65, reward.text, { fontSize: '24px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5);
+      }
 
       if (day === this.currentRewardDay && this.canClaim) this.tweens.add({ targets: g, alpha: 0.8, duration: 800, yoyo: true, repeat: -1 });
     }
