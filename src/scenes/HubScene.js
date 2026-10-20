@@ -29,7 +29,9 @@ this.makeButton(cx, 640, 'БОССЫ', '#cc3333', () => this.scene.start('BossLi
     // Было: this.makeButton(cx, 860, 'МАГАЗИН', '#aa66ff', () => this.openStub('Магазин'));
 // Стало:
 this.makeButton(cx, 860, 'МАГАЗИН', '#aa66ff', () => this.scene.start('ShopScene'));
-    this.makeButton(cx, 1000, 'ЕЖЕДНЕВНЫЙ БОНУС', '#ffaa22', () => this.openStub('Бонус'));
+    // Было: this.makeButton(cx, 1000, 'ЕЖЕДНЕВНЫЙ БОНУС', '#ffaa22', () => this.openStub('Бонус'));
+// Стало:
+this.makeButton(cx, 1000, 'ЕЖЕДНЕВНЫЙ БОНУС', '#ffaa22', () => this.scene.start('DailyBonusScene'));
 
     // Кнопка сброса сохранения (для отладки)
     const reset = this.add.text(20, 1230, 'RESET SAVE', {
