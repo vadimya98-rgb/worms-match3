@@ -19,12 +19,15 @@ export default class HubScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     // Кнопки режимов и разделов
-    this.makeButton(cx, 480, 'ФАРМ', '#22aa44', () => this.openStub('Фарм'));
+    // Кнопка ФАРМ теперь ведет на FarmScene
+    this.makeButton(cx, 480, 'ФАРМ', '#22aa44', () => this.scene.start('FarmScene'));
+    
+    // Остальные кнопки пока ведут на заглушку
     this.makeButton(cx, 640, 'БОССЫ', '#cc3333', () => this.openStub('Боссы'));
     this.makeButton(cx, 860, 'МАГАЗИН', '#aa66ff', () => this.openStub('Магазин'));
     this.makeButton(cx, 1000, 'ЕЖЕДНЕВНЫЙ БОНУС', '#ffaa22', () => this.openStub('Бонус'));
 
-    // Кнопка сброса сохранения (только для отладки, потом уберём или спрячем)
+    // Кнопка сброса сохранения (для отладки)
     const reset = this.add.text(20, 1230, 'RESET SAVE', {
       fontSize: '18px',
       color: '#666666',
@@ -59,12 +62,14 @@ export default class HubScene extends Phaser.Scene {
       backgroundColor: color,
       padding: { x: 60, y: 24 },
     }).setOrigin(0.5);
+    
     btn.setInteractive();
     btn.on('pointerdown', onClick);
+    
     return btn;
   }
 
-  // Заглушка для ещё не реализованных экранов
+  // Заглушка для еще не реализованных экранов
   openStub(name) {
     this.scene.start('StubScene', { from: 'HubScene', name });
   }
