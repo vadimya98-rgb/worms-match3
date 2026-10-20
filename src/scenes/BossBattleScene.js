@@ -19,6 +19,7 @@ export default class BossBattleScene extends Phaser.Scene {
     this.isBusy = false; this.isGameOver = false; this.isPaused = false;
     this.playerMovesCount = 0;
     this.bleedTurns = 0; this.poisonTurns = 0;
+    this.bossStunned = false;
     
     this.team = data.team.map(id => {
       const char = getCharacterData(id);
@@ -44,6 +45,7 @@ export default class BossBattleScene extends Phaser.Scene {
     this.createBoard();
     this.setupInput();
     
+    // Показываем, что ход игрока при старте
     this.showTurnBanner('ВАШ ХОД', '#2ecc71');
   }
 
@@ -351,9 +353,6 @@ export default class BossBattleScene extends Phaser.Scene {
     });
   }
 
-  // ==========================================
-  // УНИКАЛЬНЫЕ КОНТР-УДАРЫ
-  // ==========================================
   useCounterAttack() {
     if (this.playerMovesCount < 3 || this.isBusy || this.isGameOver || this.isPaused) return;
     this.isBusy = true; 
@@ -366,15 +365,12 @@ export default class BossBattleScene extends Phaser.Scene {
     const sx = 360;
     const sy = 1060;
 
-    // Наносим урон (логика)
-    let dmg = 70; // Базовый урон контр-удара
+    let dmg = 70; 
     this.bossHp = Math.max(0, this.bossHp - dmg); 
     this.updateBossHpUI();
     this.showFloatingText(ex, ey - 50, 'УДАР!', '#f1c40f');
 
-    // Запускаем визуальные эффекты в зависимости от персонажа
     if (activeChar.id === 'dragon') {
-        // ДРАКОН: Огонь
         this.cameras.main.shake(300, 0.05);
         let proj = this.add.particles(sx, sy, 'white_pixel', {
             speed: 400, angle: { min: 250, max: 290 },
@@ -385,7 +381,6 @@ export default class BossBattleScene extends Phaser.Scene {
         this.time.delayedCall(800, () => {
             proj.destroy();
             this.hitBoss();
-            // Поджигаем босса (частицы огня на нем)
             let fireOnBoss = this.add.particles(ex, ey, 'white_pixel', {
                 speed: { min: 50, max: 100 }, angle: { min: 0, max: 360 },
                 scale: { start: 1.5, end: 0 }, lifespan: 1000,
@@ -396,13 +391,11 @@ export default class BossBattleScene extends Phaser.Scene {
         });
 
     } else if (activeChar.id === 'cat') {
-        // КОТ: Царапины
         this.cameras.main.shake(200, 0.08);
         this.cameras.main.flash(200, 255, 255, 255);
         
         let scratch = this.add.graphics().setDepth(160);
         scratch.lineStyle(6, 0xffffff, 1);
-        // Рисуем 3 полосы
         scratch.beginPath(); scratch.moveTo(ex - 40, ey - 40); scratch.lineTo(ex + 40, ey + 40); scratch.strokePath();
         scratch.beginPath(); scratch.moveTo(ex - 20, ey - 50); scratch.lineTo(ex + 60, ey + 30); scratch.strokePath();
         scratch.beginPath(); scratch.moveTo(ex - 60, ey - 30); scratch.lineTo(ex + 20, ey + 50); scratch.strokePath();
@@ -415,16 +408,13 @@ export default class BossBattleScene extends Phaser.Scene {
         });
 
     } else if (activeChar.id === 'robot') {
-        // РОБОТ: Электричество
         this.cameras.main.shake(300, 0.05);
-        this.cameras.main.flash(300, 0, 255, 255); // Синяя вспышка
+        this.cameras.main.flash(300, 0, 255, 255);
 
         let lightning = this.add.graphics().setDepth(160);
         lightning.lineStyle(4, 0x00ffff, 1);
         lightning.beginPath();
         lightning.moveTo(sx, sy);
-        // Рисуем зигзаг
-        let curX = sx, curY = sy;
         let steps = 10;
         for (let i = 1; i <= steps; i++) {
             let nextX = Phaser.Math.Linear(sx, ex, i/steps) + Phaser.Math.Between(-50, 50);
@@ -447,14 +437,12 @@ export default class BossBattleScene extends Phaser.Scene {
         });
 
     } else if (activeChar.id === 'zombie') {
-        // ЗОМБИ: Яд
         this.cameras.main.shake(200, 0.03);
         let proj = this.add.circle(sx, sy, 30, 0x00ff00).setDepth(150);
         
         this.tweens.add({ targets: proj, x: ex, y: ey, duration: 800, ease: 'Power2', onComplete: () => {
             proj.destroy();
             this.hitBoss();
-            // Зеленое облако на боссе
             let poisonCloud = this.add.particles(ex, ey, 'white_pixel', {
                 speed: { min: 20, max: 100 }, angle: { min: 0, max: 360 },
                 scale: { start: 1.5, end: 0 }, lifespan: 1500,
@@ -471,7 +459,6 @@ export default class BossBattleScene extends Phaser.Scene {
     }
   }
 
-  // Вспомогательная функция для завершения контр-удара
   endCounterAttack() {
     this.time.delayedCall(1000, () => { 
         if (this.bossHp <= 0) this.winGame(); 
