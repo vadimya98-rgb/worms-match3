@@ -358,6 +358,7 @@ export default class BossBattleScene extends Phaser.Scene {
     });
   }
 
+  // УПРОЩЕННЫЕ И БЕЗОПАСНЫЕ КОНТР-УДАРЫ
   useCounterAttack() {
     if (this.playerMovesCount < 3 || this.isBusy || this.isGameOver || this.isPaused) return;
     this.isBusy = true; 
@@ -377,23 +378,14 @@ export default class BossBattleScene extends Phaser.Scene {
 
     if (activeChar.id === 'dragon') {
         this.cameras.main.shake(300, 0.05);
-        let proj = this.add.particles(sx, sy, 'white_pixel', {
-            speed: 400, angle: { min: 250, max: 290 },
-            scale: { start: 2, end: 0 }, lifespan: 800,
-            tint: 0xff5500, blendMode: 'ADD'
-        }).setDepth(150);
-        
-        this.time.delayedCall(800, () => {
+        let proj = this.add.circle(sx, sy, 30, 0xff5500).setDepth(150);
+        this.tweens.add({ targets: proj, x: ex, y: ey, duration: 800, ease: 'Power2', onComplete: () => {
             proj.destroy();
             this.hitBoss();
-            let fireOnBoss = this.add.particles(ex, ey, 'white_pixel', {
-                speed: { min: 50, max: 100 }, angle: { min: 0, max: 360 },
-                scale: { start: 1.5, end: 0 }, lifespan: 1000,
-                tint: 0xff5500, blendMode: 'ADD'
-            }).setDepth(160);
+            let fire = this.add.particles(ex, ey, 'white_pixel', { speed: 100, lifespan: 1000, tint: 0xff5500, blendMode: 'ADD' }).setDepth(160);
             this.bossSprite.setTint(0xff5500);
-            this.time.delayedCall(1500, () => { fireOnBoss.destroy(); this.bossSprite.clearTint(); this.endCounterAttack(); });
-        });
+            this.time.delayedCall(1500, () => { fire.destroy(); this.bossSprite.clearTint(); this.endCounterAttack(); });
+        }});
 
     } else if (activeChar.id === 'cat') {
         this.cameras.main.shake(200, 0.08);
@@ -401,9 +393,9 @@ export default class BossBattleScene extends Phaser.Scene {
         
         let scratch = this.add.graphics().setDepth(160);
         scratch.lineStyle(6, 0xffffff, 1);
-        scratch.beginPath(); scratch.moveTo(ex - 40, ey - 40); scratch.lineTo(ex + 40, ey + 40); scratch.strokePath();
-        scratch.beginPath(); scratch.moveTo(ex - 20, ey - 50); scratch.lineTo(ex + 60, ey + 30); scratch.strokePath();
-        scratch.beginPath(); scratch.moveTo(ex - 60, ey - 30); scratch.lineTo(ex + 20, ey + 50); scratch.strokePath();
+        scratch.lineBetween(ex - 40, ey - 40, ex + 40, ey + 40);
+        scratch.lineBetween(ex - 20, ey - 50, ex + 60, ey + 30);
+        scratch.lineBetween(ex - 60, ey - 30, ex + 20, ey + 50);
 
         this.bossSprite.setTint(0xff0000);
         
@@ -420,12 +412,7 @@ export default class BossBattleScene extends Phaser.Scene {
         lightning.lineStyle(4, 0x00ffff, 1);
         lightning.beginPath();
         lightning.moveTo(sx, sy);
-        let steps = 10;
-        for (let i = 1; i <= steps; i++) {
-            let nextX = Phaser.Math.Linear(sx, ex, i/steps) + Phaser.Math.Between(-50, 50);
-            let nextY = Phaser.Math.Linear(sy, ey, i/steps);
-            lightning.lineTo(nextX, nextY);
-        }
+        lightning.lineTo(ex, ey);
         lightning.strokePath();
 
         this.bossSprite.setTint(0x00ffff);
@@ -433,7 +420,6 @@ export default class BossBattleScene extends Phaser.Scene {
         this.time.delayedCall(300, () => {
             lightning.destroy();
             this.hitBoss();
-            this.spawnSparks(ex, ey, 0x00ffff);
             this.tweens.add({ targets: this.bossSprite, alpha: 0.5, duration: 100, yoyo: true, repeat: 3, onComplete: () => {
                 this.bossSprite.setAlpha(1);
                 this.bossSprite.clearTint();
@@ -448,15 +434,11 @@ export default class BossBattleScene extends Phaser.Scene {
         this.tweens.add({ targets: proj, x: ex, y: ey, duration: 800, ease: 'Power2', onComplete: () => {
             proj.destroy();
             this.hitBoss();
-            let poisonCloud = this.add.particles(ex, ey, 'white_pixel', {
-                speed: { min: 20, max: 100 }, angle: { min: 0, max: 360 },
-                scale: { start: 1.5, end: 0 }, lifespan: 1500,
-                tint: 0x00ff00, alpha: { start: 0.8, end: 0 }
-            }).setDepth(160);
+            let poison = this.add.particles(ex, ey, 'white_pixel', { speed: 50, lifespan: 1500, tint: 0x00ff00, alpha: { start: 0.8, end: 0 } }).setDepth(160);
             this.bossSprite.setTint(0x00ff00);
             
             this.time.delayedCall(1500, () => { 
-                poisonCloud.destroy(); 
+                poison.destroy(); 
                 this.bossSprite.clearTint(); 
                 this.endCounterAttack(); 
             });
