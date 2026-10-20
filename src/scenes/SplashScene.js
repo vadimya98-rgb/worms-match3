@@ -6,24 +6,31 @@ export default class SplashScene extends Phaser.Scene {
   }
 
   create() {
+    // ДОБАВИЛИ ФОН ЗАГРУЗКИ
+    this.add.image(360, 640, 'bg').setDisplaySize(720, 1280);
+
     const cx = this.scale.width / 2;
     const cy = this.scale.height / 2;
 
-    // Название
+    // Затемняющая подложка, чтобы текст читался на фоне
+    this.add.rectangle(cx, cy, 720, 1280, 0x000000, 0.4);
+
     this.add.text(cx, cy - 250, 'MATCH-WORMIKS', {
       fontSize: '72px',
       color: '#ffffff',
       fontStyle: 'bold',
       align: 'center',
+      stroke: '#000000',
+      strokeThickness: 6
     }).setOrigin(0.5);
 
-    // Подпись
     this.add.text(cx, cy - 170, 'загрузка игры...', {
       fontSize: '26px',
-      color: '#aaaaff',
+      color: '#ffffff',
+      stroke: '#000000',
+      strokeThickness: 4
     }).setOrigin(0.5);
 
-    // Прогресс-бар: подложка + заполнение
     const barW = 400;
     const barH = 20;
     const barX = cx - barW / 2;
@@ -35,9 +42,10 @@ export default class SplashScene extends Phaser.Scene {
     const progressText = this.add.text(cx, barY + 50, '0%', {
       fontSize: '22px',
       color: '#ffffff',
+      stroke: '#000000',
+      strokeThickness: 4
     }).setOrigin(0.5);
 
-    // Объект, который будет "анимироваться" — Phaser твинит его поле value.
     const progress = { value: 0 };
     this.tweens.add({
       targets: progress,
@@ -52,7 +60,6 @@ export default class SplashScene extends Phaser.Scene {
     });
   }
 
-  // Решаем, куда идти: если Дракон уже выдан — в хаб, иначе — на выдачу.
   nextScene() {
     if (Save.isDragonOwned()) {
       this.scene.start('HubScene');
