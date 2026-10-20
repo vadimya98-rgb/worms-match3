@@ -7,49 +7,47 @@ export default class BossBattleScene extends Phaser.Scene {
   constructor() { super({ key: 'BossBattleScene' }); }
 
   init(data) {
-  this.bossData = BOSSES[data.bossIndex];
-  this.bossIndex = data.bossIndex;
-  
-  this.COLS = 8; this.ROWS = 8;
-  this.TILE_SIZE = 72; 
-  this.GAP = 4;
-  this.OFFSET_X = (720 - this.COLS * this.TILE_SIZE) / 2;
-  this.OFFSET_Y = 350; 
-
-  this.bossHp = this.bossData.maxHp;
-  this.bossArmor = this.bossData.armor;
-  this.isBusy = false; this.isGameOver = false; this.isPaused = false;
-  this.playerMovesCount = 0;
-  this.bleedTurns = 0; this.poisonTurns = 0;
-  
-  // СТРОГАЯ ЗАЩИТА ОТ ПУСТЫХ ДАННЫХ
-  const validTeam = data.team ? data.team.filter(id => id !== null) : [];
-  
-  this.team = validTeam.map(id => {
-    const char = getCharacterData(id);
-    const state = Save.getCharacter(id);
-    if (!char) return null; 
-
-    let maxHp = getCharacterMaxHp(id, state.level);
-    let maxArmor = getCharacterMaxArmor(id, state.armorLevel);
+    this.bossData = BOSSES[data.bossIndex];
+    this.bossIndex = data.bossIndex;
     
-    return { 
-        id: id, name: char.name, 
-        hp: maxHp, maxHp: maxHp,
-        armor: maxArmor, maxArmor: maxArmor,
-        antitoxinTurns: 0 
-    };
-  }).filter(c => c !== null);
+    this.COLS = 8; this.ROWS = 8;
+    this.TILE_SIZE = 72; 
+    this.GAP = 4;
+    this.OFFSET_X = (720 - this.COLS * this.TILE_SIZE) / 2;
+    this.OFFSET_Y = 350; 
 
-  // ЕСЛИ КОМАНДА ПУСТАЯ, ВЫКИДЫВАЕМ В МЕНЮ (ПРЕДОТВРАЩАЕТ ЗАВИСАНИЕ)
-  if (this.team.length === 0) {
-      this.scene.start('BossListScene');
-      return;
+    this.bossHp = this.bossData.maxHp;
+    this.bossArmor = this.bossData.armor;
+    this.isBusy = false; this.isGameOver = false; this.isPaused = false;
+    this.playerMovesCount = 0;
+    this.bleedTurns = 0; this.poisonTurns = 0;
+    
+    const validTeam = data.team ? data.team.filter(id => id !== null) : [];
+    
+    this.team = validTeam.map(id => {
+      const char = getCharacterData(id);
+      const state = Save.getCharacter(id);
+      if (!char) return null; 
+
+      let maxHp = getCharacterMaxHp(id, state.level);
+      let maxArmor = getCharacterMaxArmor(id, state.armorLevel);
+      
+      return { 
+          id: id, name: char.name, 
+          hp: maxHp, maxHp: maxHp,
+          armor: maxArmor, maxArmor: maxArmor,
+          antitoxinTurns: 0 
+      };
+    }).filter(c => c !== null);
+
+    if (this.team.length === 0) {
+        this.scene.start('BossListScene');
+        return;
+    }
+
+    this.activeCharIndex = 0; this.selectedTile = null; this.grid = [];
+    this.pool = [0, 1, 2, 3, 4, 5];
   }
-
-  this.activeCharIndex = 0; this.selectedTile = null; this.grid = [];
-  this.pool = [0, 1, 2, 3, 4, 5];
-}
 
   create() {
     if (!this.textures.exists('white_pixel')) {
@@ -82,15 +80,15 @@ export default class BossBattleScene extends Phaser.Scene {
     this.podiumGraphics = this.add.graphics();
     this.drawPodium();
 
-    // ВЕРТИКАЛЬНАЯ ПОЛОСКА HP СЛЕВА
+    // ВЕРТИКАЛЬНАЯ ПОЛОСКА HP СЛЕВА (ИСПРАВЛЕНО НА GRAPHICS)
     this.add.rectangle(180, 220, 24, 140, 0x333333).setStrokeStyle(2, 0xffffff);
-    this.bossHpBar = this.add.rectangle(180, 290, 20, 136, 0xff3333).setOrigin(0.5, 1);
+    this.bossHpBar = this.add.graphics(); // БЫЛО RECTANGLE, СТАЛО GRAPHICS
     this.bossHpText = this.add.text(180, 300, `${this.bossHp}`, { fontSize: '16px', color: '#ffffff', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5, 0);
 
-    // ВЕРТИКАЛЬНАЯ ПОЛОСКА БРОНИ СПРАВА (если есть)
+    // ВЕРТИКАЛЬНАЯ ПОЛОСКА БРОНИ СПРАВА (ИСПРАВЛЕНО НА GRAPHICS)
     if (this.bossArmor > 0) {
         this.add.rectangle(540, 220, 16, 140, 0x333333).setStrokeStyle(2, 0xaaaaaa);
-        this.bossArmorBar = this.add.rectangle(540, 290, 12, 136, 0x3399db).setOrigin(0.5, 1);
+        this.bossArmorBar = this.add.graphics(); // БЫЛО RECTANGLE, СТАЛО GRAPHICS
         this.bossArmorText = this.add.text(540, 300, `${this.bossArmor}`, { fontSize: '14px', color: '#33ccff', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5, 0);
     }
 
@@ -101,7 +99,6 @@ export default class BossBattleScene extends Phaser.Scene {
     this.charContainers = [];
     this.renderTeamUI();
     
-    // КНОПКИ ПРЕДМЕТОВ
     let antiCount = Save.getAntitoxins ? Save.getAntitoxins() : 0;
     this.add.graphics().fillStyle(0xffffff, 0.15).fillRoundedRect(20, 1080, 140, 60, 15).lineStyle(3, 0x3498db, 1).strokeRoundedRect(20, 1080, 140, 60, 15);
     this.add.image(50, 1110, 'icon_medkit').setDisplaySize(36, 36);
@@ -153,11 +150,9 @@ export default class BossBattleScene extends Phaser.Scene {
       const nameBg = this.add.graphics().fillStyle(0x000000, 0.7).fillRoundedRect(x - 60, y + 70, 120, 25, 10);
       const nameText = this.add.text(x, y + 82, `${char.hp} / ${char.maxHp}`, { fontSize: '16px', color: '#ffffff', fontStyle: 'bold', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5);
 
-      // Полоска HP
       const hpBg = this.add.graphics().fillStyle(0x000000, 0.8).fillRoundedRect(x - 50, y - 95, 100, 16, 8);
       const hpFill = this.add.graphics().fillStyle(0x2ecc71, 1).fillRoundedRect(x - 50 + 2, y - 93, 96 * (char.hp/char.maxHp), 12, 6);
 
-      // Полоска Брони (если есть)
       if (char.maxArmor > 0) {
           const armorBg = this.add.graphics().fillStyle(0x000000, 0.8).fillRoundedRect(x - 50, y - 75, 100, 10, 5);
           const armorFill = this.add.graphics().fillStyle(0x3498db, 1).fillRoundedRect(x - 50 + 2, y - 73, 96 * (char.armor/char.maxArmor), 6, 3);
@@ -474,7 +469,6 @@ export default class BossBattleScene extends Phaser.Scene {
         this.shootProjectile(bossWeaponId, this.bossSprite.x, this.bossSprite.y, 360, 1060, () => {
             this.cameras.main.shake(200, 0.03);
             
-            // УРОН ПО БРОНЕ ИГРОКА
             let char = this.team[this.activeCharIndex];
             if (char.armor > 0) {
                 if (char.armor >= bossDamage) {
@@ -509,13 +503,19 @@ export default class BossBattleScene extends Phaser.Scene {
     const pct = Math.max(0, this.bossHp / this.bossData.maxHp);
     let color = 0x2ecc71; if (pct < 0.6) color = 0xf1c40f; if (pct < 0.3) color = 0xe74c3c;
     
-    this.bossHpBar.clear().fillStyle(color, 1).fillRoundedRect(170, 290 - (136 * pct), 20, 136 * pct, 6);
-    this.bossHpBar.fillStyle(0xffffff, 0.4).fillRoundedRect(170, 290 - (136 * pct), 8, 136 * pct, 4); 
+    this.bossHpBar.clear();
+    if (pct > 0) {
+        this.bossHpBar.fillStyle(color, 1).fillRoundedRect(170, 290 - (136 * pct), 20, 136 * pct, 6);
+        this.bossHpBar.fillStyle(0xffffff, 0.4).fillRoundedRect(170, 290 - (136 * pct), 8, 136 * pct, 4); 
+    }
     this.bossHpText.setText(`${this.bossHp}`);
 
     if (this.bossArmorBar) {
         const armorPct = Math.max(0, this.bossArmor / this.bossData.armor);
-        this.bossArmorBar.clear().fillStyle(0x3399db, 1).fillRoundedRect(534, 290 - (136 * armorPct), 12, 136 * armorPct, 4);
+        this.bossArmorBar.clear();
+        if (armorPct > 0) {
+            this.bossArmorBar.fillStyle(0x3399db, 1).fillRoundedRect(534, 290 - (136 * armorPct), 12, 136 * armorPct, 4);
+        }
         this.bossArmorText.setText(`${this.bossArmor}`);
     }
     
