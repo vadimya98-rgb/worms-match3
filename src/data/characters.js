@@ -1,60 +1,33 @@
 export const CHARACTERS = [
   {
-    id: 'dragon',
-    name: 'Дракон',
-    description: 'Стартовая раса. Контр-удар: Огонь (70 урона).',
-    baseHp: 230,
-    hpPerLevel: 30,
-    price: 0,
-    isStarter: true,
-    // Стоимость переходов с 1 на 2, с 2 на 3 и т.д.
-    upgradeCosts: [0, 50, 60, 70, 80, 90], 
+    id: 'dragon', name: 'Дракон', description: 'Стартовая раса. Урон огнем.',
+    baseHp: 500, hpPerLevel: 100, price: 0, isStarter: true,
+    // Цена прокачки с 1 до 2, с 2 до 3 и т.д.
+    upgradeCosts: [0, 100, 250, 500, 1000, 2000, 4000, 8000, 15000], 
   },
   {
-    id: 'cat',
-    name: 'Кот',
-    description: 'Контр-удар: Царапины (40 урона + кровотечение).',
-    baseHp: 230,
-    hpPerLevel: 30,
-    price: 500,
-    isStarter: false,
-    upgradeCosts: [0, 50, 60, 70, 80, 90],
+    id: 'cat', name: 'Кот', description: 'Быстрый и наносит кровотечение.',
+    baseHp: 550, hpPerLevel: 120, price: 1500, isStarter: false,
+    upgradeCosts: [0, 150, 350, 700, 1400, 2800, 5500, 10000, 20000],
   },
   {
-    id: 'robot',
-    name: 'Робот',
-    description: 'Контр-удар: Ток (80 урона + пропуск хода босса).',
-    baseHp: 230,
-    hpPerLevel: 30,
-    price: 700,
-    isStarter: false,
-    upgradeCosts: [0, 50, 60, 70, 80, 90],
+    id: 'robot', name: 'Робот', description: 'Имеет ток и пропускает ход врага.',
+    baseHp: 600, hpPerLevel: 130, price: 4000, isStarter: false,
+    upgradeCosts: [0, 200, 450, 900, 1800, 3500, 7000, 13000, 25000],
   },
   {
-    id: 'zombie',
-    name: 'Зомби',
-    description: 'Контр-удар: Яд (25 урона + отравление на 5 ходов).',
-    baseHp: 230,
-    hpPerLevel: 30,
-    price: 1000,
-    isStarter: false,
-    upgradeCosts: [0, 50, 60, 70, 80, 90],
+    id: 'zombie', name: 'Зомби', description: 'Травит врага на 5 ходов.',
+    baseHp: 650, hpPerLevel: 150, price: 8000, isStarter: false,
+    upgradeCosts: [0, 250, 600, 1200, 2400, 4500, 9000, 16000, 30000],
   },
 ];
 
-export function getCharacterData(id) {
-  return CHARACTERS.find((c) => c.id === id);
-}
-
+export function getCharacterData(id) { return CHARACTERS.find((c) => c.id === id); }
 export function getCharacterMaxHp(id, level) {
   const c = getCharacterData(id);
-  if (!c) return 0;
-  return c.baseHp + (level - 1) * c.hpPerLevel;
+  return c ? c.baseHp + (level - 1) * c.hpPerLevel : 0;
 }
-
 export function getUpgradeCost(id, currentLevel) {
   const c = getCharacterData(id);
-  if (!c) return Infinity;
-  // Если достигли 6 уровня (5 апгрейдов), цена Infinity (MAX)
-  return c.upgradeCosts[currentLevel] ?? Infinity;
+  return c ? (c.upgradeCosts[currentLevel] ?? Infinity) : Infinity;
 }
