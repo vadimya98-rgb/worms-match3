@@ -31,6 +31,15 @@ export default class BossBattleScene extends Phaser.Scene {
   }
 
   create() {
+    // Частицы для искр
+    if (!this.textures.exists('white_pixel')) {
+      const g = this.make.graphics();
+      g.fillStyle(0xffffff);
+      g.fillRect(0, 0, 8, 8);
+      g.generateTexture('white_pixel', 8, 8);
+      g.destroy();
+    }
+
     this.add.image(360, 640, 'bg').setDisplaySize(720, 1280);
     this.add.rectangle(360, 640, 720, 1280, 0x1e3799, 0.6);
 
@@ -40,7 +49,6 @@ export default class BossBattleScene extends Phaser.Scene {
   }
 
   buildUI() {
-    // Кнопка сдаться
     const surrenderBtn = this.add.container(360, 40);
     const sBg = this.add.graphics().fillStyle(0xe74c3c, 1).fillRoundedRect(-90, -25, 180, 50, 15).lineStyle(3, 0xffffff, 0.8).strokeRoundedRect(-90, -25, 180, 50, 15);
     surrenderBtn.add([sBg, this.add.text(0, 0, '🏳️ СДАТЬСЯ', { fontSize: '20px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5)]);
@@ -50,11 +58,11 @@ export default class BossBattleScene extends Phaser.Scene {
     
     this.bossSprite = this.add.image(360, 230, 'boss' + this.bossIndex).setDisplaySize(200, 200);
     this.bossStartX = 360;
+    this.bossStartY = 230;
 
     this.podiumGraphics = this.add.graphics();
     this.drawPodium();
 
-    // HP Босса (Неоновая)
     this.bossHpBarBg = this.add.graphics().lineStyle(6, 0x000000, 0.8).strokeRoundedRect(110, 340, 500, 30, 15);
     this.bossHpBar = this.add.graphics();
     this.bossHpText = this.add.text(360, 355, `${this.bossHp}`, { fontSize: '18px', color: '#ffffff', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5);
@@ -112,13 +120,9 @@ export default class BossBattleScene extends Phaser.Scene {
 
       const charImg = this.add.image(x, y, char.id).setDisplaySize(110, 110);
       
-      // ЧЕТКИЙ ТЕКСТ ХП (Плашка)
       const nameBg = this.add.graphics().fillStyle(0x000000, 0.7).fillRoundedRect(x - 60, y + 70, 120, 25, 10);
-      const nameText = this.add.text(x, y + 82, `${char.hp} / ${char.maxHp}`, { 
-          fontSize: '16px', color: '#ffffff', fontStyle: 'bold', stroke: '#000', strokeThickness: 4 
-      }).setOrigin(0.5);
+      const nameText = this.add.text(x, y + 82, `${char.hp} / ${char.maxHp}`, { fontSize: '16px', color: '#ffffff', fontStyle: 'bold', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5);
 
-      // Полоска ХП
       const hpBg = this.add.graphics().fillStyle(0x000000, 0.8).fillRoundedRect(x - 50, y - 95, 100, 16, 8);
       const hpFill = this.add.graphics().fillStyle(0x2ecc71, 1).fillRoundedRect(x - 50 + 2, y - 93, 96 * (char.hp/char.maxHp), 12, 6);
 
@@ -233,34 +237,136 @@ export default class BossBattleScene extends Phaser.Scene {
   removeTiles(tiles) {
     const weapon = WEAPONS[tiles[0].colorIndex];
     this.playWeaponAnimation(tiles[0].colorIndex, tiles[0].x, tiles[0].y);
+    
+    // Урон применяется сразу в логике, а анимация идет параллельно
     let dmgHp = weapon.damage, dmgArmor = 0;
     if (weapon.armorPierce > 0 && this.bossArmor > 0) { dmgArmor = weapon.armorPierce; dmgHp = 0; }
     else if (this.bossArmor > 0) { dmgArmor = weapon.damage; dmgHp = 0; }
     if (dmgArmor > 0) this.bossArmor = Math.max(0, this.bossArmor - dmgArmor);
     if (dmgHp > 0) this.bossHp = Math.max(0, this.bossHp - dmgHp);
     this.updateBossHpUI();
+    
+    // Если ледяная мина (заморозка)
+    if (weapon.stun) this.bossStunned = true;
+
     tiles.forEach(t => { this.grid[t.gridRow][t.gridCol] = null; t.bg.destroy(); t.destroy(); });
     this.playerMovesCount++; this.renderTeamUI();
+    
+    // Запускаем гравитацию через 600мс (снаряды летят 2-3 сек, но игрок должен видеть падение фишек)
     this.time.delayedCall(600, () => this.applyGravity());
   }
 
+  // ==========================================
+  // СУПЕР-АНИМАЦИИ ОРУЖИЯ
+  // ==========================================
   playWeaponAnimation(wId, sx, sy) {
     const ex = this.bossSprite.x, ey = this.bossSprite.y;
     let proj;
+
     if (wId === 0) { 
-      proj = this.add.circle(sx, sy, 12, 0xff6b00).setDepth(50);
-      this.tweens.addCounter({ from: 0, to: 1, duration: 1200, ease: 'Sine.easeInOut', onUpdate: (tw) => { let t = tw.getValue(); proj.x = Phaser.Math.Linear(sx, ex, t) + Math.sin(t * Math.PI * 2) * 150; proj.y = Phaser.Math.Linear(sy, ey, t) - Math.cos(t * Math.PI * 4) * 100; }, onComplete: () => { proj.destroy(); this.hitBoss(); } });
+      // БАЗУКА: Ракета нарезает круги
+      proj = this.add.image(sx, sy, 'weapon0').setDisplaySize(40, 40).setDepth(50);
+      this.tweens.addCounter({
+        from: 0, to: 1, duration: 2500, ease: 'Linear',
+        onUpdate: (tw) => { 
+          let t = tw.getValue(); 
+          // Спираль
+          let radius = 150 * (1 - t); // Сужается к концу
+          proj.x = Phaser.Math.Linear(sx, ex, t) + Math.sin(t * Math.PI * 10) * radius; 
+          proj.y = Phaser.Math.Linear(sy, ey, t) + Math.cos(t * Math.PI * 10) * radius; 
+          proj.angle += 15;
+        }, 
+        onComplete: () => { proj.destroy(); this.hitBoss(); } 
+      });
+
     } else if (wId === 1) { 
-      proj = this.add.circle(sx, sy, 15, 0x2ecc71).setDepth(50);
-      this.tweens.addCounter({ from: 0, to: 1, duration: 1000, ease: 'Linear', onUpdate: (tw) => { let t = tw.getValue(); proj.x = Phaser.Math.Linear(sx, ex, t); proj.y = Phaser.Math.Linear(sy, ey, t) - Math.sin(t * Math.PI) * 250; }, onComplete: () => { proj.destroy(); this.hitBoss(); } });
+      // ГРАНАТА: Летит по дуге
+      proj = this.add.image(sx, sy, 'weapon1').setDisplaySize(30, 30).setDepth(50);
+      this.tweens.addCounter({ 
+        from: 0, to: 1, duration: 1000, ease: 'Linear', 
+        onUpdate: (tw) => { 
+          let t = tw.getValue(); 
+          proj.x = Phaser.Math.Linear(sx, ex, t); 
+          proj.y = Phaser.Math.Linear(sy, ey, t) - Math.sin(t * Math.PI) * 150; 
+          proj.angle += 10;
+        }, 
+        onComplete: () => { 
+          proj.destroy(); 
+          this.hitBoss(); 
+          this.spawnSparks(ex, ey); // Искры
+        } 
+      });
+
+    } else if (wId === 2) {
+      // ДИНАМИТ: Взрыв рядом с боссом
+      proj = this.add.image(ex + 50, ey + 50, 'weapon2').setDisplaySize(50, 50).setDepth(50).setAlpha(0);
+      this.tweens.add({ targets: proj, alpha: 1, duration: 300, onComplete: () => {
+        this.time.delayedCall(300, () => {
+          proj.destroy();
+          this.spawnSparks(ex, ey);
+          // Подкидывание босса
+          this.tweens.add({ targets: this.bossSprite, y: this.bossSprite.y - 60, duration: 150, yoyo: true, ease: 'Quad.easeOut', onComplete: () => { this.bossSprite.y = this.bossStartY; this.hitBoss(); } });
+        });
+      }});
+
     } else if (wId === 3) { 
-      proj = this.add.star(sx, sy, 4, 5, 15, 0x9b59b6).setDepth(50);
-      this.tweens.add({ targets: proj, angle: 720, duration: 1000 });
-      this.tweens.add({ targets: proj, x: ex, y: ey, duration: 1000, ease: 'Power1', onComplete: () => { proj.destroy(); this.hitBoss(); } });
+      // СВЕРЛЯЩАЯ: Хаотичный полет
+      proj = this.add.image(sx, sy, 'weapon3').setDisplaySize(35, 35).setDepth(50);
+      this.tweens.addCounter({
+        from: 0, to: 1, duration: 1500, ease: 'Linear',
+        onUpdate: (tw) => { 
+          let t = tw.getValue(); 
+          proj.x = Phaser.Math.Linear(sx, ex, t) + Math.sin(t * Math.PI * 8) * 100; 
+          proj.y = Phaser.Math.Linear(sy, ey, t) - Math.cos(t * Math.PI * 8) * 100; 
+          proj.angle += 30;
+        }, 
+        onComplete: () => { proj.destroy(); this.hitBoss(); } 
+      });
+
+    } else if (wId === 4) { 
+      // МИНА: Взрыв рядом, откидывает босса
+      proj = this.add.image(ex - 50, ey + 50, 'weapon4').setDisplaySize(40, 40).setDepth(50).setAlpha(0);
+      this.tweens.add({ targets: proj, alpha: 1, duration: 300, onComplete: () => {
+        this.time.delayedCall(300, () => {
+          proj.destroy();
+          this.spawnSparks(this.bossSprite.x, this.bossSprite.y);
+          // Откидывание босса вправо (т.к. мина слева)
+          this.tweens.add({ targets: this.bossSprite, x: this.bossSprite.x + 60, duration: 100, yoyo: true, ease: 'Quad.easeOut', onComplete: () => { this.bossSprite.x = this.bossStartX; this.hitBoss(); } });
+        });
+      }});
+
     } else { 
-      proj = this.add.circle(ex, ey + 80, 20, wId===4?0xe74c3c:0x3498db).setDepth(50);
-      this.tweens.add({ targets: proj, y: ey, alpha: 0, duration: 600, delay: 200, onComplete: () => { proj.destroy(); this.hitBoss(); } });
+      // ЛЕДЯНАЯ МИНА (5): Взрыв и заморозка
+      proj = this.add.image(ex + 50, ey + 50, 'weapon5').setDisplaySize(40, 40).setDepth(50).setAlpha(0);
+      this.tweens.add({ targets: proj, alpha: 1, duration: 300, onComplete: () => {
+        this.time.delayedCall(300, () => {
+          proj.destroy();
+          this.spawnSparks(this.bossSprite.x, this.bossSprite.y, 0x00ffff);
+          // Заморозка: босс становится синим
+          this.bossSprite.setTint(0x00ffff);
+          this.hitBoss();
+          
+          // Через 2 секунды возвращаем цвет
+          this.time.delayedCall(2000, () => {
+            this.bossSprite.clearTint();
+          });
+        });
+      }});
     }
+  }
+
+  spawnSparks(x, y, color = 0xffaa00) {
+    let emitter = this.add.particles(x, y, 'white_pixel', {
+        speed: { min: 100, max: 300 },
+        angle: { min: 0, max: 360 },
+        scale: { start: 1, end: 0 },
+        lifespan: 600,
+        quantity: 15,
+        tint: color,
+        blendMode: 'ADD'
+    }).setDepth(60);
+    
+    this.time.delayedCall(600, () => emitter.destroy());
   }
 
   hitBoss() {
@@ -268,7 +374,13 @@ export default class BossBattleScene extends Phaser.Scene {
     this.bossSprite.setTint(0xffffff);
     let flash = this.add.circle(this.bossSprite.x, this.bossSprite.y, 30, 0xffffff, 1).setDepth(51);
     this.tweens.add({ targets: flash, scale: 6, alpha: 0, duration: 400, onComplete: () => flash.destroy() });
-    this.tweens.add({ targets: this.bossSprite, x: this.bossStartX + 40, duration: 50, yoyo: true, onComplete: () => { this.bossSprite.clearTint(); this.bossSprite.x = this.bossStartX; } });
+    
+    // Если босс не подкинут анимацией, делаем стандартную отдачу
+    if (this.bossSprite.y === this.bossStartY && this.bossSprite.x === this.bossStartX) {
+        this.tweens.add({ targets: this.bossSprite, x: this.bossStartX + 40, duration: 50, yoyo: true, onComplete: () => { this.bossSprite.clearTint(); this.bossSprite.x = this.bossStartX; } });
+    } else {
+        this.time.delayedCall(200, () => this.bossSprite.clearTint());
+    }
   }
 
   applyGravity() {
@@ -297,7 +409,11 @@ export default class BossBattleScene extends Phaser.Scene {
       if (nm.length > 0) this.removeTiles(nm);
       else {
         if (this.bossHp <= 0) this.winGame();
-        else if (this.bossStunned) { this.bossStunned = false; this.isBusy = false; }
+        else if (this.bossStunned) { 
+            this.bossStunned = false; 
+            this.showFloatingText(360, 200, 'ХОД ПРОПУЩЕН', '#00ffff');
+            this.isBusy = false; 
+        }
         else this.bossTurn();
       }
     });
@@ -308,7 +424,7 @@ export default class BossBattleScene extends Phaser.Scene {
     this.isBusy = true; this.playerMovesCount = 0; this.renderTeamUI();
     this.cameras.main.shake(300, 0.03);
     let proj = this.add.circle(360, 1060, 30, 0xf1c40f).setDepth(50);
-    this.tweens.add({ targets: proj, x: this.bossSprite.x, y: this.bossSprite.y, duration: 600, ease: 'Power2', onComplete: () => { proj.destroy(); this.hitBoss(); } });
+    this.tweens.add({ targets: proj, x: this.bossSprite.x, y: this.bossSprite.y, duration: 600, ease: 'Power2', onComplete: () => { proj.destroy(); this.spawnSparks(this.bossSprite.x, this.bossSprite.y, 0xf1c40f); this.hitBoss(); } });
     let dmg = 70; 
     this.bossHp = Math.max(0, this.bossHp - dmg); this.updateBossHpUI();
     this.showFloatingText(this.bossSprite.x, this.bossSprite.y - 50, 'УДАР!', '#f1c40f');
