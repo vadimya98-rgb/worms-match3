@@ -1,5 +1,5 @@
 import { Save } from '../data/save.js';
-import { CHARACTERS, getCharacterMaxHp, getUpgradeCost } from '../data/characters.js';
+import { CHARACTERS, getCharacterMaxHp, getCharacterMaxArmor, getUpgradeCost, getArmorUpgradeCost } from '../data/characters.js';
 
 export default class ShopScene extends Phaser.Scene {
   constructor() { super({ key: 'ShopScene' }); }
@@ -10,7 +10,7 @@ export default class ShopScene extends Phaser.Scene {
 
     this.currentTab = 'characters';
     this.container = this.add.container(0, 0);
-    this.adminClickCount = 0; // СЧЕТЧИК ДЛЯ АДМИНКИ
+    this.adminClickCount = 0;
     
     this.buildHeader();
     this.buildTabs();
@@ -25,10 +25,8 @@ export default class ShopScene extends Phaser.Scene {
     
     this.fuzzText = this.add.text(580, 50, `${Save.getFuzz()}`, { fontSize: '24px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0, 0.5);
     
-    // СЕКРЕТНОЕ НАЖАТИЕ НА БАЛАНС ФУЗОВ
     this.fuzzText.setInteractive();
     this.fuzzText.on('pointerdown', () => {
-      // Считаем клики только если мы во вкладке ПРЕДМЕТЫ
       if (this.currentTab === 'boosts') {
         this.adminClickCount++;
         if (this.adminClickCount >= 5) {
@@ -41,14 +39,10 @@ export default class ShopScene extends Phaser.Scene {
 
   buildTabs() {
     this.tabCharsBtn = this.add.text(200, 150, 'ПЕРСОНАЖИ', { fontSize: '24px', color: '#fff', backgroundColor: '#2ecc71', padding: { x: 20, y: 10 }, stroke: '#000', strokeThickness: 3 }).setOrigin(0.5).setInteractive();
-    this.tabCharsBtn.on('pointerdown', () => { 
-        if (this.currentTab !== 'characters') { this.currentTab = 'characters'; this.adminClickCount = 0; this.refreshContent(); } 
-    });
+    this.tabCharsBtn.on('pointerdown', () => { if (this.currentTab !== 'characters') { this.currentTab = 'characters'; this.adminClickCount = 0; this.refreshContent(); } });
 
     this.tabBoostsBtn = this.add.text(520, 150, 'ПРЕДМЕТЫ', { fontSize: '24px', color: '#fff', backgroundColor: '#2c3e50', padding: { x: 20, y: 10 }, stroke: '#000', strokeThickness: 3 }).setOrigin(0.5).setInteractive();
-    this.tabBoostsBtn.on('pointerdown', () => { 
-        if (this.currentTab !== 'boosts') { this.currentTab = 'boosts'; this.adminClickCount = 0; this.refreshContent(); } 
-    });
+    this.tabBoostsBtn.on('pointerdown', () => { if (this.currentTab !== 'boosts') { this.currentTab = 'boosts'; this.adminClickCount = 0; this.refreshContent(); } });
   }
 
   updateFuzzUI() { this.fuzzText.setText(`${Save.getFuzz()}`); }
@@ -64,52 +58,72 @@ export default class ShopScene extends Phaser.Scene {
 
   renderCharacters() {
     let y = 220;
+    const isArmorUnlocked = Save.data.bosses['boss2'] === 'defeated';
+
     CHARACTERS.forEach((char) => {
       const state = Save.getCharacter(char.id);
-      const bg = this.add.graphics().fillStyle(0xffffff, 0.1).fillRoundedRect(40, y, 640, 130, 20).lineStyle(2, 0xffffff, 0.3).strokeRoundedRect(40, y, 640, 130, 20);
+      
+      // Увеличили высоту карточки для 2х кнопок
+      const bg = this.add.graphics().fillStyle(0xffffff, 0.1).fillRoundedRect(40, y, 640, 160, 20).lineStyle(2, 0xffffff, 0.3).strokeRoundedRect(40, y, 640, 160, 20);
       this.container.add(bg);
 
-      const charImg = this.add.image(100, y + 65, char.id).setDisplaySize(70, 70);
+      const charImg = this.add.image(100, y + 80, char.id).setDisplaySize(70, 70);
       this.container.add(charImg);
 
       this.container.add(this.add.text(150, y + 20, state.owned ? `${char.name} (Ур. ${state.level})` : char.name, { fontSize: '24px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }));
       
-      if (state.owned) this.container.add(this.add.text(150, y + 65, `HP: ${getCharacterMaxHp(char.id, state.level)}`, { fontSize: '18px', color: '#2ecc71', fontStyle: 'bold' }));
-      else this.container.add(this.add.text(150, y + 65, char.description, { fontSize: '14px', color: '#ccc', wordWrap: { width: 300 } }));
+      if (state.owned) {
+        this.container.add(this.add.text(150, y + 65, `HP: ${getCharacterMaxHp(char.id, state.level)}`, { fontSize: '16px', color: '#2ecc71', fontStyle: 'bold' }));
+        let armorVal = getCharacterMaxArmor(char.id, state.armorLevel);
+        this.container.add(this.add.text(150, y + 90, `Броня: ${armorVal}`, { fontSize: '16px', color: '#3498db', fontStyle: 'bold' }));
+      } else {
+        this.container.add(this.add.text(150, y + 65, char.description, { fontSize: '14px', color: '#ccc', wordWrap: { width: 300 } }));
+      }
 
-      this.createCharButton(600, y + 65, char, state);
-      y += 145;
+      if (!state.owned) {
+          this.createCharButton(600, y + 80, 'КУПИТЬ', char.price, Save.getFuzz() >= char.price, () => {
+              if (Save.spendFuzz(char.price)) { Save.ownCharacter(char.id); this.updateFuzzUI(); this.refreshContent(); }
+          });
+      } else {
+          // Кнопка ХП
+          const hpCost = getUpgradeCost(char.id, state.level);
+          this.createCharButton(600, y + 45, hpCost === Infinity ? 'HP MAX' : 'УЛУЧШИТЬ ХП', hpCost, hpCost !== Infinity && Save.getFuzz() >= hpCost, () => {
+              if (hpCost !== Infinity && Save.spendFuzz(hpCost)) { Save.upgradeCharacter(char.id); this.updateFuzzUI(); this.refreshContent(); }
+          });
+
+          // Кнопка Брони
+          if (isArmorUnlocked) {
+              const armorCost = getArmorUpgradeCost(char.id, state.armorLevel);
+              this.createCharButton(600, y + 115, armorCost === Infinity ? 'БРОНЯ MAX' : 'УЛУЧШИТЬ БР.', armorCost, armorCost !== Infinity && Save.getFuzz() >= armorCost, () => {
+                  if (armorCost !== Infinity && Save.spendFuzz(armorCost)) { Save.upgradeArmor(char.id); this.updateFuzzUI(); this.refreshContent(); }
+              }, 0x3498db);
+          } else {
+              const lockText = this.add.text(600, y + 115, 'БРОНЯ\n(3-й босс)', { fontSize: '12px', color: '#7f8c8d', align: 'center', fontStyle: 'bold' }).setOrigin(0.5);
+              this.container.add(lockText);
+          }
+      }
+      y += 175; // Увеличили шаг
     });
   }
 
-  createCharButton(x, y, char, state) {
-    const isOwned = state.owned || char.isStarter;
-    let label, cost, canAfford;
-    if (!isOwned) { label = 'КУПИТЬ'; cost = char.price; canAfford = Save.getFuzz() >= cost; } 
-    else {
-      cost = getUpgradeCost(char.id, state.level);
-      if (cost === Infinity) { label = 'MAX'; } 
-      else { label = 'УЛУЧШИТЬ'; canAfford = Save.getFuzz() >= cost; }
-    }
-    const btnColor = label === 'MAX' ? 0x7f8c8d : (canAfford ? 0x2ecc71 : 0xe74c3c);
+  createCharButton(x, y, label, cost, canAfford, onClick, baseColor = 0x2ecc71) {
+    const btnColor = cost === Infinity ? 0x7f8c8d : (canAfford ? baseColor : 0xe74c3c);
     const btn = this.add.container(x, y);
-    const bBg = this.add.graphics().fillStyle(Phaser.Display.Color.IntegerToColor(btnColor).darken(20).color, 1).fillRoundedRect(-70, -25, 140, 60, 15);
-    const bMain = this.add.graphics().fillStyle(btnColor, 1).fillRoundedRect(-70, -30, 140, 60, 15);
-    btn.add([bBg, bMain, this.add.text(0, -12, label, { fontSize: '16px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 2 }).setOrigin(0.5)]);
     
-    if (label !== 'MAX') {
-        btn.add(this.add.image(-15, 10, 'icon_fuz').setDisplaySize(18, 18));
-        btn.add(this.add.text(10, 10, `${cost}`, { fontSize: '16px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 2 }).setOrigin(0.5));
+    const bBg = this.add.graphics().fillStyle(Phaser.Display.Color.IntegerToColor(btnColor).darken(20).color, 1).fillRoundedRect(-80, -20, 160, 45, 12);
+    const bMain = this.add.graphics().fillStyle(btnColor, 1).fillRoundedRect(-80, -25, 160, 45, 12);
+    
+    btn.add([bBg, bMain, this.add.text(0, -10, label, { fontSize: '14px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 2 }).setOrigin(0.5)]);
+    
+    if (cost !== Infinity) {
+        btn.add(this.add.image(-15, 10, 'icon_fuz').setDisplaySize(16, 16));
+        btn.add(this.add.text(10, 10, `${cost}`, { fontSize: '14px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 2 }).setOrigin(0.5));
     }
-    btn.setSize(140, 60);
-    if (label !== 'MAX' && canAfford) {
+
+    btn.setSize(160, 45);
+    if (canAfford && cost !== Infinity) {
       btn.setInteractive({ useHandCursor: true });
-      btn.on('pointerdown', () => {
-        if (Save.spendFuzz(cost)) {
-          if (label === 'КУПИТЬ') Save.ownCharacter(char.id); else Save.upgradeCharacter(char.id);
-          this.updateFuzzUI(); this.refreshContent();
-        }
-      });
+      btn.on('pointerdown', onClick);
     }
     this.container.add(btn);
   }
