@@ -23,6 +23,10 @@ export default class BossBattleScene extends Phaser.Scene {
     this.bossPoisonTurns = 0; 
     this.bossPoisonCloud = null; 
     
+    // ФЛАГИ ОГРАНИЧЕНИЯ ПРЕДМЕТОВ (1 РАЗ ЗА БОЙ)
+    this.medkitUsed = false;
+    this.antitoxinUsed = false;
+    
     const validTeam = data.team ? data.team.filter(id => id !== null) : [];
     
     this.team = validTeam.map(id => {
@@ -99,15 +103,18 @@ export default class BossBattleScene extends Phaser.Scene {
     this.renderTeamUI();
     
     let antiCount = Save.getAntitoxins ? Save.getAntitoxins() : 0;
-    this.add.graphics().fillStyle(0xffffff, 0.15).fillRoundedRect(20, 1080, 140, 60, 15).lineStyle(3, 0x3498db, 1).strokeRoundedRect(20, 1080, 140, 60, 15);
+    
+    // АПТЕЧКА
+    this.medkitBg = this.add.graphics().fillStyle(0xffffff, 0.15).fillRoundedRect(20, 1080, 140, 60, 15).lineStyle(3, 0x3498db, 1).strokeRoundedRect(20, 1080, 140, 60, 15);
     this.add.image(50, 1110, 'icon_medkit').setDisplaySize(36, 36);
     this.medkitText = this.add.text(130, 1110, `x${Save.getMedkits()}`, { fontSize: '22px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(1, 0.5);
-    this.add.zone(90, 1110, 140, 60).setInteractive().on('pointerdown', () => this.useItem('medkit'));
+    this.medkitZone = this.add.zone(90, 1110, 140, 60).setInteractive().on('pointerdown', () => this.useItem('medkit'));
 
-    this.add.graphics().fillStyle(0xffffff, 0.15).fillRoundedRect(20, 1160, 140, 60, 15).lineStyle(3, 0x00f0ff, 1).strokeRoundedRect(20, 1160, 140, 60, 15);
+    // АНТИТОКСИН
+    this.antitoxinBg = this.add.graphics().fillStyle(0xffffff, 0.15).fillRoundedRect(20, 1160, 140, 60, 15).lineStyle(3, 0x00f0ff, 1).strokeRoundedRect(20, 1160, 140, 60, 15);
     this.add.image(50, 1190, 'icon_antitoksin').setDisplaySize(36, 36);
     this.antitoxinText = this.add.text(130, 1190, `x${antiCount}`, { fontSize: '22px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(1, 0.5);
-    this.add.zone(90, 1190, 140, 60).setInteractive().on('pointerdown', () => this.useItem('antitoxin'));
+    this.antitoxinZone = this.add.zone(90, 1190, 140, 60).setInteractive().on('pointerdown', () => this.useItem('antitoxin'));
   }
 
   drawPodium() {
@@ -288,7 +295,7 @@ export default class BossBattleScene extends Phaser.Scene {
 
     for (let colorIndex in groups) {
         const group = groups[colorIndex];
-        const wId = parseInt(colorIndex); // ИСПРАВЛЕНИЕ: КОНВЕРТИРУЕМ В ЧИСЛО
+        const wId = parseInt(colorIndex); 
         const weapon = WEAPONS[wId];
         
         let comboMult = 1;
@@ -501,7 +508,7 @@ export default class BossBattleScene extends Phaser.Scene {
     this.time.delayedCall(2000, () => {
         this.team.forEach(char => {
             if (char.hp > 0 && char.antitoxinTurns > 0) {
-                let heal = 50;
+                let heal = 70; // ИСПРАВЛЕНО: Лечение антитоксином 70 хп
                 char.hp = Math.min(char.maxHp, char.hp + heal);
                 char.antitoxinTurns--;
                 this.showFloatingText(360, 1060, `+${heal}`, '#00f0ff');
@@ -588,21 +595,32 @@ export default class BossBattleScene extends Phaser.Scene {
 
   useItem(type) {
     if (this.isBusy || this.isGameOver || this.isPaused) return;
+    
     const target = this.team[this.activeCharIndex];
     if (target.hp <= 0 || target.hp >= target.maxHp) return;
 
     if (type === 'medkit') {
-        if (Save.getMedkits() <= 0) return;
-        target.hp = Math.min(target.maxHp, target.hp + 300);
+        if (Save.getMedkits() <= 0 || this.medkitUsed) return; // ПРОВЕРКА ФЛАГА
+        this.medkitUsed = true;
+        
+        target.hp = Math.min(target.maxHp, target.hp + 200); // ИСПРАВЛЕНО: 200 ХП
         Save.data.player.medkits -= 1; Save.flush();
-        this.medkitText.setText(`x${Save.getMedkits()}`);
-        this.showFloatingText(360, 1060, `+300`, '#2ecc71');
+        
+        this.medkitText.setText(`0`); // Показываем, что больше нельзя
+        this.medkitBg.clear().fillStyle(0x333333, 0.5).fillRoundedRect(20, 1080, 140, 60, 15).lineStyle(3, 0x555555, 1).strokeRoundedRect(20, 1080, 140, 60, 15);
+        
+        this.showFloatingText(360, 1060, `+200`, '#2ecc71'); // ВЫВОД ТЕКСТА
     } else if (type === 'antitoxin') {
-        if (!Save.getAntitoxins || Save.getAntitoxins() <= 0) return;
-        target.antitoxinTurns = 3;
+        if (!Save.getAntitoxins || Save.getAntitoxins() <= 0 || this.antitoxinUsed) return; // ПРОВЕРКА ФЛАГА
+        this.antitoxinUsed = true;
+        
+        target.antitoxinTurns = 4; // ИСПРАВЛЕНО: 4 ХОДА
         Save.data.player.antitoxins -= 1; Save.flush();
-        this.antitoxinText.setText(`x${Save.getAntitoxins ? Save.getAntitoxins() : 0}`);
-        this.showFloatingText(360, 1060, `АНТИТОКСИН!`, '#00f0ff');
+        
+        this.antitoxinText.setText(`0`);
+        this.antitoxinBg.clear().fillStyle(0x333333, 0.5).fillRoundedRect(20, 1160, 140, 60, 15).lineStyle(3, 0x555555, 1).strokeRoundedRect(20, 1160, 140, 60, 15);
+        
+        this.showFloatingText(360, 1060, `Лечение 4 хода по 70хп`, '#00f0ff'); // ВЫВОД ТЕКСТА
     }
     this.renderTeamUI();
   }
