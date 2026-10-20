@@ -30,7 +30,7 @@ export default class FarmScene extends Phaser.Scene {
 
     this.add.graphics().fillStyle(0xffffff, 0.15).fillRoundedRect(520, 40, 180, 60, 20).lineStyle(3, 0xffcc00, 0.8).strokeRoundedRect(520, 40, 180, 60, 20);
     this.add.text(550, 70, '💰', { fontSize: '28px' }).setOrigin(0, 0.5);
-    this.fuzzText = this.add.text(600, 70, `${this.fuzzEarned}`, { fontSize: '24px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0, 0.5);
+    this.fuzzText = this.add.text(600, 70, `0`, { fontSize: '24px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0, 0.5);
   }
 
   updateMovesUI() { this.movesText.setText(`Ходы: ${this.movesLeft}`); }
@@ -140,10 +140,15 @@ export default class FarmScene extends Phaser.Scene {
   }
 
   removeTiles(tiles) {
-    // Было: this.fuzzEarned += tiles.length * 10;
-// Стало:
-this.fuzzEarned += tiles.length * 20; 
-    tiles.forEach(t => { this.grid[t.gridRow][t.gridCol] = null; t.bg.destroy(); this.tweens.add({ targets: t, scale: 0, alpha: 0, duration: 200, onComplete: () => t.destroy() }); });
+    // ИСПРАВЛЕНИЕ: Теперь точно обновляется UI и начисляются фузы
+    this.fuzzEarned += tiles.length * 20; 
+    this.updateFuzzUI();
+    
+    tiles.forEach(t => { 
+        this.grid[t.gridRow][t.gridCol] = null; 
+        t.bg.destroy(); 
+        this.tweens.add({ targets: t, scale: 0, alpha: 0, duration: 200, onComplete: () => t.destroy() }); 
+    });
     this.time.delayedCall(200, () => this.applyGravity());
   }
 
@@ -171,7 +176,10 @@ this.fuzzEarned += tiles.length * 20;
     this.time.delayedCall(350, () => {
       const nm = this.findMatches();
       if (nm.length > 0) this.removeTiles(nm);
-      else { this.isBusy = false; if (this.movesLeft <= 0) this.endGame(); }
+      else { 
+          this.isBusy = false; 
+          if (this.movesLeft <= 0) this.endGame(); 
+      }
     });
   }
 
@@ -181,7 +189,7 @@ this.fuzzEarned += tiles.length * 20;
     Save.addFuzz(this.fuzzEarned);
     
     this.add.rectangle(360, 640, 720, 1280, 0x000000, 0.85).setDepth(100);
-    const panel = this.add.graphics().setDepth(101).fillStyle(0x2c3e50, 0.95).fillRoundedRect(160, 440, 400, 400, 30).lineStyle(4, 0x2ecc71, 1).strokeRoundedRect(160, 440, 400, 400, 30);
+    this.add.graphics().setDepth(101).fillStyle(0x2c3e50, 0.95).fillRoundedRect(160, 440, 400, 400, 30).lineStyle(4, 0x2ecc71, 1).strokeRoundedRect(160, 440, 400, 400, 30);
     this.add.text(360, 520, 'ИГРА ОКОНЧЕНА', { fontSize: '40px', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5).setDepth(102);
     this.add.text(360, 620, `Собрано фузов:\n${this.fuzzEarned}`, { fontSize: '32px', color: '#f1c40f', align: 'center', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5).setDepth(102);
 
@@ -189,13 +197,7 @@ this.fuzzEarned += tiles.length * 20;
     const bg = this.add.graphics().fillStyle(0x2ecc71, 1).fillRoundedRect(-150, -40, 300, 80, 30).lineStyle(6, 0xffffff, 1).strokeRoundedRect(-150, -40, 300, 80, 30);
     btn.add([bg, this.add.text(0, 0, 'ЗАБРАТЬ', { fontSize: '36px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 5 }).setOrigin(0.5)]);
     btn.setSize(300, 80).setInteractive();
-    
-    // Исправление: используем pointerup и задержку, чтобы клик не проваливался в меню
-    btn.on('pointerup', () => { 
-        this.time.delayedCall(100, () => {
-            this.scene.start('HubScene'); 
-        });
-    });
+    btn.on('pointerup', () => this.time.delayedCall(100, () => this.scene.start('HubScene')));
   }
 
   createCandyButton(x, y, width, height, text, color, onClick) {
