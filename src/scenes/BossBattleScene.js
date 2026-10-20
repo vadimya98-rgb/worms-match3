@@ -32,15 +32,7 @@ export default class BossBattleScene extends Phaser.Scene {
 
   create() {
     this.add.image(360, 640, 'bg').setDisplaySize(720, 1280);
-    this.add.rectangle(360, 640, 720, 1280, 0x000000, 0.6);
-
-    this.borderGraphics = this.add.graphics();
-    this.time.addEvent({ delay: 100, callback: () => {
-        this.borderGraphics.clear();
-        let c = Phaser.Display.Color.HSVToRGB((this.time.now / 3000) % 1, 1, 1).color;
-        this.borderGraphics.lineStyle(8, c, 0.6).strokeRect(8, 8, 704, 1264);
-        this.borderGraphics.lineStyle(2, 0xffffff, 0.9).strokeRect(8, 8, 704, 1264);
-    }, loop: true });
+    this.add.rectangle(360, 640, 720, 1280, 0x1e3799, 0.6);
 
     this.buildUI();
     this.createBoard();
@@ -50,8 +42,8 @@ export default class BossBattleScene extends Phaser.Scene {
   buildUI() {
     // Кнопка сдаться
     const surrenderBtn = this.add.container(360, 40);
-    const sBg = this.add.graphics().fillStyle(0x2c3e50, 0.9).fillRoundedRect(-90, -25, 180, 50, 15).lineStyle(3, 0xe74c3c, 1).strokeRoundedRect(-90, -25, 180, 50, 15);
-    surrenderBtn.add([sBg, this.add.text(0, 0, '🏳️ СДАТЬСЯ', { fontSize: '20px', color: '#e74c3c', fontStyle: 'bold' }).setOrigin(0.5)]);
+    const sBg = this.add.graphics().fillStyle(0xe74c3c, 1).fillRoundedRect(-90, -25, 180, 50, 15).lineStyle(3, 0xffffff, 0.8).strokeRoundedRect(-90, -25, 180, 50, 15);
+    surrenderBtn.add([sBg, this.add.text(0, 0, '🏳️ СДАТЬСЯ', { fontSize: '20px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5)]);
     surrenderBtn.setSize(180, 50).setInteractive().on('pointerdown', () => this.showSurrenderModal());
 
     this.add.text(360, 100, this.bossData.name, { fontSize: '40px', color: '#e74c3c', fontStyle: 'bold', stroke: '#000', strokeThickness: 6 }).setOrigin(0.5);
@@ -62,7 +54,7 @@ export default class BossBattleScene extends Phaser.Scene {
     this.podiumGraphics = this.add.graphics();
     this.drawPodium();
 
-    // HP Босса
+    // HP Босса (Неоновая)
     this.bossHpBarBg = this.add.graphics().lineStyle(6, 0x000000, 0.8).strokeRoundedRect(110, 340, 500, 30, 15);
     this.bossHpBar = this.add.graphics();
     this.bossHpText = this.add.text(360, 355, `${this.bossHp}`, { fontSize: '18px', color: '#ffffff', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5);
@@ -96,9 +88,9 @@ export default class BossBattleScene extends Phaser.Scene {
   }
 
   createMedkitBtn() {
-    this.add.graphics().fillStyle(0x2c3e50, 0.9).fillRoundedRect(20, 1160, 140, 60, 15).lineStyle(3, 0x3498db, 1).strokeRoundedRect(20, 1160, 140, 60, 15);
+    this.add.graphics().fillStyle(0xffffff, 0.15).fillRoundedRect(20, 1160, 140, 60, 15).lineStyle(3, 0x3498db, 1).strokeRoundedRect(20, 1160, 140, 60, 15);
     this.add.text(40, 1190, '💊', { fontSize: '30px' }).setOrigin(0, 0.5);
-    this.medkitText = this.add.text(90, 1190, `x${Save.getMedkits()}`, { fontSize: '24px', color: '#3498db', fontStyle: 'bold' }).setOrigin(0, 0.5);
+    this.medkitText = this.add.text(90, 1190, `x${Save.getMedkits()}`, { fontSize: '24px', color: '#3498db', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0, 0.5);
     this.add.zone(90, 1190, 140, 60).setInteractive().on('pointerdown', () => this.useMedkit());
   }
 
@@ -115,12 +107,12 @@ export default class BossBattleScene extends Phaser.Scene {
       let neonColor = isActive ? 0x2ecc71 : 0x555555;
       if (isActive && this.playerMovesCount >= 3) neonColor = 0xe74c3c;
 
-      bgCircle.lineStyle(8, neonColor, 0.4).strokeCircle(x, y, 65);
+      bgCircle.lineStyle(8, neonColor, 0.3).strokeCircle(x, y, 65);
       bgCircle.lineStyle(4, neonColor, 1).strokeCircle(x, y, 65);
 
       const charImg = this.add.image(x, y, char.id).setDisplaySize(110, 110);
       
-      // ЧЕТКИЙ ТЕКСТ ХП
+      // ЧЕТКИЙ ТЕКСТ ХП (Плашка)
       const nameBg = this.add.graphics().fillStyle(0x000000, 0.7).fillRoundedRect(x - 60, y + 70, 120, 25, 10);
       const nameText = this.add.text(x, y + 82, `${char.hp} / ${char.maxHp}`, { 
           fontSize: '16px', color: '#ffffff', fontStyle: 'bold', stroke: '#000', strokeThickness: 4 
@@ -361,20 +353,17 @@ export default class BossBattleScene extends Phaser.Scene {
     this.showFloatingText(360, 1060, `+100`, '#2ecc71');
   }
 
-  // ОКНО СДАЧИ С ЗАКРУГЛЕННЫМИ КНОПКАМИ
   showSurrenderModal() {
     if (this.isPaused) return; this.isPaused = true;
     const overlay = this.add.rectangle(360, 640, 720, 1280, 0x000000, 0.9).setDepth(100);
-    const panel = this.add.graphics().setDepth(101).fillStyle(0x1a1a2e, 1).fillRoundedRect(160, 500, 400, 280, 25).lineStyle(4, 0xe74c3c, 1).strokeRoundedRect(160, 500, 400, 280, 25);
+    const panel = this.add.graphics().setDepth(101).fillStyle(0x2c3e50, 1).fillRoundedRect(160, 500, 400, 280, 25).lineStyle(4, 0xe74c3c, 1).strokeRoundedRect(160, 500, 400, 280, 25);
     this.add.text(360, 560, 'ВЫ УВЕРЕНЫ?', { fontSize: '32px', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5).setDepth(102);
     
-    // Кнопка ДА
     const yesBtn = this.add.container(260, 680).setDepth(102);
     const yBg = this.add.graphics().fillStyle(0xe74c3c, 1).fillRoundedRect(-60, -30, 120, 60, 15).lineStyle(3, 0xffffff, 0.8).strokeRoundedRect(-60, -30, 120, 60, 15);
     yesBtn.add([yBg, this.add.text(0, 0, 'ДА', { fontSize: '28px', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5)]);
     yesBtn.setSize(120, 60).setInteractive().on('pointerdown', () => this.scene.start('BossListScene'));
 
-    // Кнопка НЕТ
     const noBtn = this.add.container(460, 680).setDepth(102);
     const nBg = this.add.graphics().fillStyle(0x2ecc71, 1).fillRoundedRect(-60, -30, 120, 60, 15).lineStyle(3, 0xffffff, 0.8).strokeRoundedRect(-60, -30, 120, 60, 15);
     noBtn.add([nBg, this.add.text(0, 0, 'НЕТ', { fontSize: '28px', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5)]);
@@ -397,7 +386,7 @@ export default class BossBattleScene extends Phaser.Scene {
     Save.addFuzz(this.bossData.reward);
 
     this.add.rectangle(360, 640, 720, 1280, 0x000000, 0.85).setDepth(100);
-    const panel = this.add.graphics().setDepth(101).fillStyle(0x1a1a2e, 0.95).fillRoundedRect(160, 440, 400, 400, 30).lineStyle(4, 0x2ecc71, 1).strokeRoundedRect(160, 440, 400, 400, 30);
+    const panel = this.add.graphics().setDepth(101).fillStyle(0x2c3e50, 0.95).fillRoundedRect(160, 440, 400, 400, 30).lineStyle(4, 0x2ecc71, 1).strokeRoundedRect(160, 440, 400, 400, 30);
     
     this.add.text(360, 520, 'ПОБЕДА!', { fontSize: '56px', color: '#2ecc71', fontStyle: 'bold', stroke: '#000', strokeThickness: 6 }).setOrigin(0.5).setDepth(102);
     this.add.text(360, 620, `Награда: ${this.bossData.reward} Фузов`, { fontSize: '32px', color: '#f1c40f', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5).setDepth(102);
@@ -413,7 +402,7 @@ export default class BossBattleScene extends Phaser.Scene {
     if (this.isGameOver) return;
     this.isGameOver = true;
     this.add.rectangle(360, 640, 720, 1280, 0x000000, 0.85).setDepth(100);
-    const panel = this.add.graphics().setDepth(101).fillStyle(0x1a1a2e, 0.95).fillRoundedRect(160, 440, 400, 400, 30).lineStyle(4, 0xe74c3c, 1).strokeRoundedRect(160, 440, 400, 400, 30);
+    const panel = this.add.graphics().setDepth(101).fillStyle(0x2c3e50, 0.95).fillRoundedRect(160, 440, 400, 400, 30).lineStyle(4, 0xe74c3c, 1).strokeRoundedRect(160, 440, 400, 400, 30);
     
     this.add.text(360, 520, 'ПОРАЖЕНИЕ', { fontSize: '56px', color: '#e74c3c', fontStyle: 'bold', stroke: '#000', strokeThickness: 6 }).setOrigin(0.5).setDepth(102);
     this.add.text(360, 620, `Босс оказался сильнее...`, { fontSize: '28px', color: '#ffffff', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5).setDepth(102);
