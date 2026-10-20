@@ -5,7 +5,7 @@ const defaultState = () => ({
   player: {
     fuzz: 0,
     medkits: 0,
-    antitoxins: 0, // НОВОЕ
+    antitoxins: 0, // ДОБАВЛЕНО
     characters: {},
     lastDailyBonusDay: null,
     dailyStreak: 0,
@@ -38,7 +38,6 @@ export const Save = {
   getMedkits() { return this.data.player.medkits; },
   addMedkits(n) { this.data.player.medkits += n; this.flush(); },
   
-  // НОВЫЕ МЕТОДЫ
   getAntitoxins() { return this.data.player.antitoxins; },
   addAntitoxins(n) { this.data.player.antitoxins += n; this.flush(); },
 
