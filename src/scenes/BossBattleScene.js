@@ -352,7 +352,9 @@ export default class BossBattleScene extends Phaser.Scene {
     });
   }
 
-  // ЭФФЕКТЫ КОНТР-УДАРОВ ЧЕРЕЗ ИЗОБРАЖЕНИЯ (КАК ОРУЖИЕ)
+  // ==========================================
+  // МАКСИМАЛЬНО ПРОСТЫЕ ЭФФЕКТЫ КОНТР-УДАРОВ
+  // ==========================================
   useCounterAttack() {
     if (this.playerMovesCount < 3 || this.isBusy || this.isGameOver || this.isPaused) return;
     this.isBusy = true; 
@@ -371,91 +373,76 @@ export default class BossBattleScene extends Phaser.Scene {
     this.showFloatingText(ex, ey - 50, 'УДАР!', '#f1c40f');
 
     if (activeChar.id === 'dragon') {
-        this.cameras.main.shake(300, 0.05);
-        
-        // ОГОНЬ: Оранжевые квадраты летят во врага
-        for(let i=0; i<5; i++) {
-            let fire = this.add.image(sx + Phaser.Math.Between(-20, 20), sy, 'white_pixel').setTint(0xff5500).setDisplaySize(30, 30).setDepth(150);
-            this.tweens.add({
-                targets: fire, x: ex + Phaser.Math.Between(-30, 30), y: ey + Phaser.Math.Between(-30, 30),
-                duration: 800 + i * 100, ease: 'Power2', onComplete: () => fire.destroy()
-            });
-        }
-        
-        this.time.delayedCall(1200, () => {
-            this.hitBoss();
-            this.bossSprite.setTint(0xff5500); 
-            this.time.delayedCall(1000, () => { this.bossSprite.clearTint(); this.endCounterAttack(); });
+        // ДРАКОН: Летит иконка огонька
+        let fire = this.add.text(sx, sy, '🔥', { fontSize: '50px' }).setDepth(150);
+        this.tweens.add({
+            targets: fire, x: ex, y: ey, duration: 1000, ease: 'Power2',
+            onComplete: () => {
+                fire.destroy();
+                this.hitBoss();
+                this.bossSprite.setTint(0xff5500); // Босс краснеет
+                this.time.delayedCall(1000, () => { this.bossSprite.clearTint(); this.endCounterAttack(); });
+            }
         });
 
     } else if (activeChar.id === 'cat') {
-        this.cameras.main.shake(200, 0.08);
+        // КОТ: Три красные полоски прямо на боссе
         this.cameras.main.flash(200, 255, 255, 255);
         
-        // ЦАРАПИНЫ: Три красные полосы
-        for(let i=0; i<3; i++) {
-            let scratch = this.add.image(sx, sy, 'white_pixel').setTint(0xff0000).setDisplaySize(100, 10).setDepth(160);
-            scratch.angle = -45; 
-            this.tweens.add({
-                targets: scratch, x: ex, y: ey, duration: 600, ease: 'Power2',
-                onComplete: () => {
-                    scratch.destroy();
-                    if(i === 2) {
-                        this.hitBoss();
-                        this.bossSprite.setTint(0xff0000);
-                        this.time.delayedCall(1000, () => { this.bossSprite.clearTint(); this.endCounterAttack(); });
-                    }
-                }
-            });
-        }
+        let scratch = this.add.graphics().setDepth(160);
+        scratch.lineStyle(8, 0xff0000, 1); // Красные линии
+        scratch.lineBetween(ex - 40, ey - 40, ex + 40, ey + 40);
+        scratch.lineBetween(ex - 20, ey - 50, ex + 60, ey + 30);
+        scratch.lineBetween(ex - 60, ey - 30, ex + 20, ey + 50);
+
+        this.bossSprite.setTint(0xff0000);
+        
+        this.time.delayedCall(300, () => {
+            this.hitBoss();
+            this.tweens.add({ targets: scratch, alpha: 0, duration: 1000, onComplete: () => { scratch.destroy(); this.bossSprite.clearTint(); this.endCounterAttack(); } });
+        });
 
     } else if (activeChar.id === 'robot') {
-        this.cameras.main.shake(300, 0.05);
+        // РОБОТ: Зигзаг (молния) от робота к боссу
         this.cameras.main.flash(300, 0, 255, 255);
 
-        // МОЛНИЯ: Квадраты-зигзаги
-        let steps = 8;
-        for(let i=1; i<=steps; i++) {
-            let px = Phaser.Math.Linear(sx, ex, i/steps) + Phaser.Math.Between(-30, 30);
-            let py = Phaser.Math.Linear(sy, ey, i/steps);
-            let bolt = this.add.image(px, py, 'white_pixel').setTint(0x00ffff).setDisplaySize(25, 25).setDepth(160);
-            this.tweens.add({
-                targets: bolt, alpha: 0, duration: 500, delay: 400, onComplete: () => {
-                    bolt.destroy();
-                    if(i === steps) {
-                        this.hitBoss();
-                        this.bossSprite.setTint(0x00ffff);
-                        this.tweens.add({ targets: this.bossSprite, alpha: 0.5, duration: 100, yoyo: true, repeat: 3, onComplete: () => {
-                            this.bossSprite.setAlpha(1);
-                            this.bossSprite.clearTint();
-                            this.endCounterAttack();
-                        }});
-                    }
-                }
-            });
+        let lightning = this.add.graphics().setDepth(160);
+        lightning.lineStyle(6, 0x00ffff, 1);
+        lightning.beginPath();
+        lightning.moveTo(sx, sy);
+        for(let i=1; i<=6; i++) {
+            lightning.lineTo(Phaser.Math.Linear(sx, ex, i/6) + Phaser.Math.Between(-40, 40), Phaser.Math.Linear(sy, ey, i/6));
         }
+        lightning.strokePath();
+
+        this.bossSprite.setTint(0x00ffff);
+
+        this.time.delayedCall(400, () => {
+            lightning.destroy();
+            this.hitBoss();
+            this.tweens.add({ targets: this.bossSprite, alpha: 0.5, duration: 100, yoyo: true, repeat: 3, onComplete: () => {
+                this.bossSprite.setAlpha(1);
+                this.bossSprite.clearTint();
+                this.endCounterAttack();
+            }});
+        });
 
     } else if (activeChar.id === 'zombie') {
-        this.cameras.main.shake(200, 0.03);
-        let proj = this.add.image(sx, sy, 'white_pixel').setTint(0x00ff00).setDisplaySize(50, 50).setDepth(150);
+        // ЗОМБИ: Зеленый круг на боссе (пульсирует)
+        let poison = this.add.circle(ex, ey, 80, 0x00ff00, 0.6).setDepth(160);
         
-        this.tweens.add({ targets: proj, x: ex, y: ey, duration: 800, ease: 'Power2', onComplete: () => {
-            proj.destroy();
-            this.hitBoss();
-            this.bossSprite.setTint(0x00ff00);
-            
-            // ЯД: Зеленые пузыри
-            for(let i=0; i<8; i++) {
-                let bubble = this.add.image(ex + Phaser.Math.Between(-40, 40), ey + Phaser.Math.Between(-40, 40), 'white_pixel').setTint(0x00ff00).setDisplaySize(20, 20).setDepth(160);
-                this.tweens.add({
-                    targets: bubble, y: bubble.y - Phaser.Math.Between(30, 70), alpha: 0, duration: 1000, onComplete: () => bubble.destroy()
-                });
+        this.tweens.add({
+            targets: poison,
+            alpha: 0.1,
+            yoyo: true,
+            repeat: 4,
+            duration: 300,
+            onComplete: () => {
+                poison.destroy();
+                this.hitBoss();
+                this.bossSprite.setTint(0x00ff00);
+                this.time.delayedCall(1000, () => { this.bossSprite.clearTint(); this.endCounterAttack(); });
             }
-            
-            this.time.delayedCall(1500, () => { 
-                this.bossSprite.clearTint(); 
-                this.endCounterAttack(); 
-            });
         });
     }
   }
