@@ -7,7 +7,6 @@ export default class ShopScene extends Phaser.Scene {
   }
 
   create() {
-    // Фон
     this.add.image(360, 640, 'bg').setDisplaySize(720, 1280);
 
     this.currentTab = 'characters';
@@ -65,32 +64,37 @@ export default class ShopScene extends Phaser.Scene {
   }
 
   renderCharacters() {
-    const startY = 280;
+    const startY = 260;
     const spacing = 180;
 
     CHARACTERS.forEach((char, index) => {
       const y = startY + index * spacing;
       const state = Save.getCharacter(char.id);
       
-      const bg = this.add.rectangle(360, y, 680, 160, 0x222244).setStrokeStyle(2, 0x6666aa);
+      const bg = this.add.rectangle(360, y, 680, 160, 0x222244, 0.9).setStrokeStyle(2, 0x6666aa);
       this.container.add(bg);
 
+      // Добавляем картинку расы
+      const charImg = this.add.image(120, y, char.id);
+      charImg.setDisplaySize(80, 80);
+      this.container.add(charImg);
+
       const titleStr = state.owned ? `${char.name} (Ур. ${state.level})` : char.name;
-      const nameText = this.add.text(60, y - 40, titleStr, {
+      const nameText = this.add.text(180, y - 45, titleStr, {
         fontSize: '32px', color: '#ffffff', fontStyle: 'bold'
       });
       this.container.add(nameText);
 
       if (state.owned) {
         const hp = getCharacterMaxHp(char.id, state.level);
-        const hpText = this.add.text(60, y + 10, `Макс. HP: ${hp}`, { fontSize: '24px', color: '#aaaaaa' });
+        const hpText = this.add.text(180, y + 5, `Макс. HP: ${hp}`, { fontSize: '24px', color: '#aaaaaa' });
         this.container.add(hpText);
       } else {
-        const descText = this.add.text(60, y + 10, char.description, { fontSize: '20px', color: '#aaaaaa' });
+        const descText = this.add.text(180, y + 5, char.description, { fontSize: '18px', color: '#aaaaaa', wordWrap: { width: 300 } });
         this.container.add(descText);
       }
 
-      this.createCharacterButton(560, y, char, state);
+      this.createCharacterButton(600, y, char, state);
     });
   }
 
@@ -143,7 +147,7 @@ export default class ShopScene extends Phaser.Scene {
     const y = 280;
     const medkitPrice = 100;
 
-    const bg = this.add.rectangle(360, y, 680, 160, 0x222244).setStrokeStyle(2, 0x6666aa);
+    const bg = this.add.rectangle(360, y, 680, 160, 0x222244, 0.9).setStrokeStyle(2, 0x6666aa);
     this.container.add(bg);
 
     const nameText = this.add.text(60, y - 40, 'Аптечка', {
