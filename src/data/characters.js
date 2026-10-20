@@ -1,66 +1,60 @@
-// Каталог всех персонажей. В сохранении храним только owned/level,
-// а характеристики (HP, цены) берём отсюда — их нельзя "потерять" или сломать.
 export const CHARACTERS = [
   {
     id: 'dragon',
     name: 'Дракон',
-    description: 'Стартовый червь. Огненное дыхание.',
-    baseHp: 200,
-    hpPerLevel: 50,
+    description: 'Стартовая раса. Контр-удар: Огонь (70 урона).',
+    baseHp: 230,
+    hpPerLevel: 30,
     price: 0,
     isStarter: true,
-    // upgradeCosts[level] = стоимость перехода С этого уровня на следующий.
-    // [1] = 300 → апгрейд с 1 на 2 уровень стоит 300 фузов.
-    upgradeCosts: [0, 300, 600, 1000, 1500, 2200],
+    // Стоимость переходов с 1 на 2, с 2 на 3 и т.д.
+    upgradeCosts: [0, 50, 60, 70, 80, 90], 
   },
   {
-    id: 'mage',
-    name: 'Маг',
-    description: 'Хрупкий, но сильный. Стреляет магией.',
-    baseHp: 250,
-    hpPerLevel: 40,
+    id: 'cat',
+    name: 'Кот',
+    description: 'Контр-удар: Царапины (40 урона + кровотечение).',
+    baseHp: 230,
+    hpPerLevel: 30,
     price: 500,
     isStarter: false,
-    upgradeCosts: [0, 400, 800, 1300, 2000, 3000],
+    upgradeCosts: [0, 50, 60, 70, 80, 90],
   },
   {
-    id: 'warrior',
-    name: 'Воин',
-    description: 'Сбалансированный боец ближнего боя.',
-    baseHp: 300,
-    hpPerLevel: 50,
+    id: 'robot',
+    name: 'Робот',
+    description: 'Контр-удар: Ток (80 урона + пропуск хода босса).',
+    baseHp: 230,
+    hpPerLevel: 30,
     price: 700,
     isStarter: false,
-    upgradeCosts: [0, 500, 900, 1500, 2300, 3400],
+    upgradeCosts: [0, 50, 60, 70, 80, 90],
   },
   {
-    id: 'tank',
-    name: 'Танк',
-    description: 'Много HP, но медленный.',
-    baseHp: 400,
-    hpPerLevel: 60,
+    id: 'zombie',
+    name: 'Зомби',
+    description: 'Контр-удар: Яд (25 урона + отравление на 5 ходов).',
+    baseHp: 230,
+    hpPerLevel: 30,
     price: 1000,
     isStarter: false,
-    upgradeCosts: [0, 600, 1100, 1800, 2700, 4000],
+    upgradeCosts: [0, 50, 60, 70, 80, 90],
   },
 ];
 
-// Поиск персонажа по id.
 export function getCharacterData(id) {
   return CHARACTERS.find((c) => c.id === id);
 }
 
-// Считает текущий максимум HP с учётом уровня.
-// Формула: базовое HP + (уровень − 1) × прибавка за уровень.
 export function getCharacterMaxHp(id, level) {
   const c = getCharacterData(id);
   if (!c) return 0;
   return c.baseHp + (level - 1) * c.hpPerLevel;
 }
 
-// Возвращает стоимость апгрейда с текущего уровня или Infinity (если достигнут максимум).
 export function getUpgradeCost(id, currentLevel) {
   const c = getCharacterData(id);
   if (!c) return Infinity;
+  // Если достигли 6 уровня (5 апгрейдов), цена Infinity (MAX)
   return c.upgradeCosts[currentLevel] ?? Infinity;
 }
