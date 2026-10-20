@@ -1,95 +1,82 @@
 import { Save } from '../data/save.js';
 
 export default class HubScene extends Phaser.Scene {
-  constructor() {
-    super({ key: 'HubScene' });
-  }
+  constructor() { super({ key: 'HubScene' }); }
 
   create() {
     this.add.image(360, 640, 'bg').setDisplaySize(720, 1280);
-    this.add.rectangle(360, 640, 720, 1280, 0x000000, 0.4);
+    this.add.rectangle(360, 640, 720, 1280, 0x000000, 0.5); // Затемнение фона
 
     this.createRainbowBorder();
     this.createTopPanel();
 
-    const cx = this.scale.width / 2;
+    const cx = 360;
 
-    this.add.text(cx, 220, 'MATCH-WORMIKS', {
-      fontSize: '56px', color: '#ffffff', fontStyle: 'bold', stroke: '#000000', strokeThickness: 8
-    }).setOrigin(0.5);
+    // Кнопки режимов (Современный стиль Match-3)
+    this.createCandyButton(cx, 450, 400, 90, 'ФАРМ', 0x2ecc71, '🌾', () => this.scene.start('FarmScene'));
+    this.createCandyButton(cx, 580, 400, 90, 'БОССЫ', 0xe74c3c, '👹', () => this.scene.start('BossListScene'));
+    this.createCandyButton(cx, 710, 400, 90, 'МАГАЗИН', 0x9b59b6, '🛒', () => this.scene.start('ShopScene'));
+    this.createCandyButton(cx, 840, 400, 90, 'БОНУС', 0xf1c40f, '🎁', () => this.scene.start('DailyBonusScene'));
 
-    this.createNeonButton(cx, 480, 400, 90, 'ФАРМ', 0x22aa44, () => this.scene.start('FarmScene'));
-    this.createNeonButton(cx, 620, 400, 90, 'БОССЫ', 0xcc3333, () => this.scene.start('BossListScene'));
-    this.createNeonButton(cx, 760, 400, 90, 'МАГАЗИН', 0xaa66ff, () => this.scene.start('ShopScene'));
-    this.createNeonButton(cx, 900, 400, 90, 'БОНУС', 0xffaa22, () => this.scene.start('DailyBonusScene'));
-
+    // Кнопка сброса (для тестов)
     const reset = this.add.text(20, 1230, 'RESET', { fontSize: '16px', color: '#ffffff', backgroundColor: '#000000aa', padding: {x:5, y:5} });
     reset.setInteractive();
     reset.on('pointerdown', () => { Save.reset(); this.scene.restart(); });
   }
 
-  // РАДУЖНАЯ НЕОНОВАЯ РАМКА
   createRainbowBorder() {
     this.borderGraphics = this.add.graphics();
-    this.borderColors = [0xff0000, 0xff9900, 0xffff00, 0x00ff00, 0x00ccff, 0x6600ff, 0xff00ff];
-    this.colorIndex = 0;
-
     this.time.addEvent({
-      delay: 150,
+      delay: 100,
       callback: () => {
         this.borderGraphics.clear();
-        let c1 = this.borderColors[this.colorIndex % this.borderColors.length];
-        let c2 = this.borderColors[(this.colorIndex + 1) % this.borderColors.length];
-        
-        // Рисуем свечение (несколько слоев)
-        for(let i=0; i<3; i++) {
-            this.borderGraphics.lineStyle(4 + i*4, i%2===0 ? c1 : c2, 0.3 - i*0.1);
-            this.borderGraphics.strokeRect(10, 10, 700, 1260);
-        }
-        this.borderGraphics.lineStyle(4, 0xffffff, 0.8);
-        this.borderGraphics.strokeRect(10, 10, 700, 1260);
-
-        this.colorIndex++;
-      },
-      loop: true
+        let c = Phaser.Display.Color.HSVToRGB((this.time.now / 3000) % 1, 1, 1).color;
+        this.borderGraphics.lineStyle(10, c, 0.6).strokeRect(10, 10, 700, 1260);
+        this.borderGraphics.lineStyle(2, 0xffffff, 0.9).strokeRect(10, 10, 700, 1260);
+      }, loop: true
     });
   }
 
   createTopPanel() {
     const x = 460, w = 240, h = 60;
     
-    let g1 = this.add.graphics();
-    g1.fillStyle(0x000000, 0.6); g1.fillRoundedRect(x, 20, w, h, 15);
-    g1.lineStyle(2, 0xffcc66, 1); g1.strokeRoundedRect(x, 20, w, h, 15);
-    this.add.text(x + 20, 50, '💰', { fontSize: '28px' }).setOrigin(0, 0.5);
-    this.add.text(x + 70, 50, `${Save.getFuzz()}`, { fontSize: '28px', color: '#ffcc66', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0, 0.5);
+    // Панель Фузов
+    this.add.graphics().fillStyle(0x2c3e50, 0.9).fillRoundedRect(x, 20, w, h, 20)
+        .lineStyle(4, 0xf1c40f, 1).strokeRoundedRect(x, 20, w, h, 20);
+    this.add.text(x + 20, 50, '💰', { fontSize: '32px' }).setOrigin(0, 0.5);
+    this.add.text(x + 70, 50, `${Save.getFuzz()}`, { fontSize: '28px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0, 0.5);
 
-    let g2 = this.add.graphics();
-    g2.fillStyle(0x000000, 0.6); g2.fillRoundedRect(x, 90, w, h, 15);
-    g2.lineStyle(2, 0xff4444, 1); g2.strokeRoundedRect(x, 90, w, h, 15);
-    this.add.text(x + 20, 120, '💊', { fontSize: '28px' }).setOrigin(0, 0.5);
-    this.add.text(x + 70, 120, `${Save.getMedkits()}`, { fontSize: '28px', color: '#ff4444', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0, 0.5);
+    // Панель Аптечек
+    this.add.graphics().fillStyle(0x2c3e50, 0.9).fillRoundedRect(x, 90, w, h, 20)
+        .lineStyle(4, 0xe74c3c, 1).strokeRoundedRect(x, 90, w, h, 20);
+    this.add.text(x + 20, 120, '💊', { fontSize: '32px' }).setOrigin(0, 0.5);
+    this.add.text(x + 70, 120, `${Save.getMedkits()}`, { fontSize: '28px', color: '#e74c3c', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0, 0.5);
   }
 
-  // УНИВЕРСАЛЬНАЯ НЕОНОВАЯ КНОПКА
-  createNeonButton(x, y, width, height, text, color, onClick) {
+  // Стиль "Мятной карамели" (как в топовых играх)
+  createCandyButton(x, y, width, height, text, color, icon, onClick) {
     const container = this.add.container(x, y);
-    const bg = this.add.graphics();
     
-    // Свечение (Glow)
-    bg.lineStyle(12, color, 0.2); bg.strokeRoundedRect(-width/2, -height/2, width, height, 20);
-    bg.lineStyle(6, color, 0.5); bg.strokeRoundedRect(-width/2, -height/2, width, height, 20);
-    // Основа
-    bg.fillStyle(0x000000, 0.6); bg.fillRoundedRect(-width/2, -height/2, width, height, 20);
-    bg.lineStyle(2, 0xffffff, 0.8); bg.strokeRoundedRect(-width/2, -height/2, width, height, 20);
+    // Тень
+    const shadow = this.add.graphics().fillStyle(0x000000, 0.5).fillRoundedRect(-width/2 + 5, -height/2 + 10, width, height, 30);
+    
+    // Основной фон (градиент имитируем двумя слоями)
+    const bg = this.add.graphics().fillStyle(color, 1).fillRoundedRect(-width/2, -height/2, width, height, 30);
+    const highlight = this.add.graphics().fillStyle(0xffffff, 0.2).fillRoundedRect(-width/2 + 5, -height/2 + 5, width - 10, height / 2, 20);
+    
+    // Толстая обводка
+    const border = this.add.graphics().lineStyle(6, 0xffffff, 1).strokeRoundedRect(-width/2, -height/2, width, height, 30);
 
-    const label = this.add.text(0, 0, text, { fontSize: '40px', color: '#ffffff', fontStyle: 'bold', stroke: '#000', strokeThickness: 5 }).setOrigin(0.5);
+    // Текст и иконка
+    const txt = this.add.text(15, 0, text, { fontSize: '38px', color: '#ffffff', fontStyle: 'bold', stroke: '#000000', strokeThickness: 6 }).setOrigin(0.5);
+    const icn = this.add.text(-width/2 + 45, 0, icon, { fontSize: '36px' }).setOrigin(0.5);
 
-    container.add([bg, label]);
+    container.add([shadow, bg, highlight, border, txt, icn]);
     container.setSize(width, height);
-    container.setInteractive();
-    container.on('pointerdown', () => { container.setScale(0.95); onClick(); });
-    container.on('pointerup', () => container.setScale(1));
-    container.on('pointerout', () => container.setScale(1));
+    container.setInteractive({ useHandCursor: true });
+
+    container.on('pointerdown', () => { container.y += 5; });
+    container.on('pointerup', () => { container.y -= 5; onClick(); });
+    container.on('pointerout', () => { container.y = y; });
   }
 }
