@@ -4,7 +4,9 @@ import StarterWormScene from './scenes/StarterWormScene.js';
 import HubScene from './scenes/HubScene.js';
 import StubScene from './scenes/StubScene.js';
 import FarmScene from './scenes/FarmScene.js';
-import ShopScene from './scenes/ShopScene.js'; // Импортируем новую сцену магазина
+import ShopScene from './scenes/ShopScene.js';
+import BossListScene from './scenes/BossListScene.js';     // Импорт карты боссов
+import BossDetailScene from './scenes/BossDetailScene.js'; // Импорт деталей босса
 
 const config = {
   type: Phaser.AUTO,
@@ -16,7 +18,6 @@ const config = {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
-  // Список всех сцен игры
   scene: [
     BootScene, 
     SplashScene, 
@@ -24,7 +25,9 @@ const config = {
     HubScene, 
     StubScene, 
     FarmScene,
-    ShopScene // Добавили ShopScene в конец списка
+    ShopScene,
+    BossListScene,   // Добавили карту
+    BossDetailScene  // Добавили детали
   ],
 };
 
