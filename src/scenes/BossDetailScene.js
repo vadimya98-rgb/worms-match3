@@ -32,7 +32,7 @@ export default class BossDetailScene extends Phaser.Scene {
     this.createCandyButton(360, 1100, 300, 80, 'В БОЙ', 0x00ff9d, () => {
       // ФИЛЬТРУЕМ NULL, ЧТОБЫ НЕ БЫЛО ЗАВИСАНИЙ
       const team = this.selectedChars.filter(id => id !== null);
-      if (team.length >= 1) {
+      if (team.length > 0) {
         this.scene.start('BossBattleScene', { bossIndex: this.bossIndex, team: team });
       }
     });
