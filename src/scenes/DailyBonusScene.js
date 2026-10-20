@@ -29,15 +29,14 @@ export default class DailyBonusScene extends Phaser.Scene {
     this.createCandyButton(100, 50, 140, 50, '←', 0x3498db, () => this.scene.start('HubScene'));
     this.add.text(cx, 130, 'ЕЖЕДНЕВНЫЙ БОНУС', { fontSize: '36px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 6 }).setOrigin(0.5);
 
-    // НОВЫЕ СБАЛАНСИРОВАННЫЕ НАГРАДЫ
     const rewards = [
-      { type: 'fuzz', amount: 100, label: '100 💰' }, 
-      { type: 'medkit', amount: 1, label: '1 💊' },
-      { type: 'fuzz', amount: 300, label: '300 💰' }, 
-      { type: 'medkit', amount: 2, label: '2 💊' },
-      { type: 'fuzz', amount: 500, label: '500 💰' }, 
-      { type: 'medkit', amount: 3, label: '3 💊' },
-      { type: 'fuzz', amount: 1500, label: '1500 💰!' }
+      { type: 'fuzz', amount: 100, icon: 'icon_fuz', text: '100' }, 
+      { type: 'medkit', amount: 1, icon: 'icon_medkit', text: 'x1' },
+      { type: 'fuzz', amount: 300, icon: 'icon_fuz', text: '300' }, 
+      { type: 'medkit', amount: 2, icon: 'icon_medkit', text: 'x2' },
+      { type: 'fuzz', amount: 500, icon: 'icon_fuz', text: '500' }, 
+      { type: 'medkit', amount: 3, icon: 'icon_medkit', text: 'x3' },
+      { type: 'fuzz', amount: 1500, icon: 'icon_fuz', text: '1500!' }
     ];
 
     const startY = 240, spacingY = 130;
@@ -56,7 +55,10 @@ export default class DailyBonusScene extends Phaser.Scene {
       const g = this.add.graphics().fillStyle(bgColor, 1).fillRoundedRect(x - cardW/2, y, cardW, cardH, 20).lineStyle(3, borderColor, 1).strokeRoundedRect(x - cardW/2, y, cardW, cardH, 20);
 
       this.add.text(x, y + 25, `День ${day}`, { fontSize: '20px', color: '#ffffff', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5);
-      this.add.text(x, y + 65, reward.label, { fontSize: '24px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5);
+      
+      // Вместо текста смайлика рисуем иконку и текст рядом
+      this.add.image(x - 30, y + 65, reward.icon).setDisplaySize(30, 30);
+      this.add.text(x + 10, y + 65, reward.text, { fontSize: '24px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5);
 
       if (day === this.currentRewardDay && this.canClaim) this.tweens.add({ targets: g, alpha: 0.8, duration: 800, yoyo: true, repeat: -1 });
     }
