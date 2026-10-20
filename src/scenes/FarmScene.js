@@ -6,6 +6,9 @@ export default class FarmScene extends Phaser.Scene {
   }
 
   create() {
+    // Фон
+    this.add.image(360, 640, 'bg').setDisplaySize(720, 1280);
+
     this.COLS = 6;
     this.ROWS = 6;
     this.TILE_SIZE = 100;
@@ -20,14 +23,15 @@ export default class FarmScene extends Phaser.Scene {
     this.movesLeft = 15;
     this.fuzzEarned = 0;
 
-    // Так как оружий всего 6, мы используем их все
+    // 6 видов оружия
     this.pool = [0, 1, 2, 3, 4, 5];
 
     this.buildHUD();
     this.createBoard();
 
     const backBtn = this.add.text(360, 1180, 'ЗАВЕРШИТЬ', {
-      fontSize: '40px', color: '#ffffff', backgroundColor: '#333366', padding: { x: 40, y: 20 }
+      fontSize: '40px', color: '#ffffff', backgroundColor: '#333366', padding: { x: 40, y: 20 },
+      stroke: '#000000', strokeThickness: 4
     }).setOrigin(0.5);
     backBtn.setInteractive();
     backBtn.on('pointerdown', () => {
@@ -39,10 +43,16 @@ export default class FarmScene extends Phaser.Scene {
   }
 
   buildHUD() {
-    this.add.rectangle(360, 60, 720, 100, 0x000022);
-    this.movesText = this.add.text(30, 60, `Ходы: ${this.movesLeft}`, { fontSize: '32px', color: '#ffffff' }).setOrigin(0, 0.5);
-    this.fuzzText = this.add.text(690, 60, `Фузы: ${this.fuzzEarned}`, { fontSize: '32px', color: '#ffcc66' }).setOrigin(1, 0.5);
-    this.add.text(360, 150, 'РЕЖИМ ФАРМ', { fontSize: '36px', color: '#8888aa' }).setOrigin(0.5);
+    this.add.rectangle(360, 60, 720, 100, 0x000022, 0.8);
+    this.movesText = this.add.text(30, 60, `Ходы: ${this.movesLeft}`, { 
+      fontSize: '32px', color: '#ffffff', stroke: '#000000', strokeThickness: 4 
+    }).setOrigin(0, 0.5);
+    this.fuzzText = this.add.text(690, 60, `Фузы: ${this.fuzzEarned}`, { 
+      fontSize: '32px', color: '#ffcc66', stroke: '#000000', strokeThickness: 4 
+    }).setOrigin(1, 0.5);
+    this.add.text(360, 150, 'РЕЖИМ ФАРМ', { 
+      fontSize: '36px', color: '#ffffff', stroke: '#000000', strokeThickness: 4 
+    }).setOrigin(0.5);
   }
 
   updateMovesUI() { this.movesText.setText(`Ходы: ${this.movesLeft}`); }
@@ -57,11 +67,9 @@ export default class FarmScene extends Phaser.Scene {
         do {
           isMatch = false;
           colorIndex = Phaser.Utils.Array.GetRandom(this.pool);
-          
           if (col >= 2 && this.grid[row][col - 1].colorIndex === colorIndex && this.grid[row][col - 2].colorIndex === colorIndex) isMatch = true;
           if (row >= 2 && this.grid[row - 1][col].colorIndex === colorIndex && this.grid[row - 2][col].colorIndex === colorIndex) isMatch = true;
         } while (isMatch);
-
         this.grid[row][col] = this.createTile(row, col, colorIndex);
       }
     }
