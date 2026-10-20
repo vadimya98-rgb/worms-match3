@@ -3,42 +3,65 @@ import { Save } from '../data/save.js';
 export default class FarmScene extends Phaser.Scene {
   constructor() { super({ key: 'FarmScene' }); }
 
+  init(data) {
+    // Если перезапускаем, сохраняем уровень
+    this.level = data?.level || 1;
+    this.score = 0;
+    this.targetScore = 1500 + (this.level - 1) * 500; // Цель растет с уровнем
+    this.movesLeft = 20;
+    
+    this.COLS = 8; 
+    this.ROWS = 8; 
+    this.TILE_SIZE = 78; // Уменьшили, чтобы 8х8 влезло на экран
+    this.GAP = 4;
+    this.OFFSET_X = (720 - this.COLS * this.TILE_SIZE) / 2;
+    this.OFFSET_Y = 350;
+  }
+
   create() {
     this.add.image(360, 640, 'bg').setDisplaySize(720, 1280);
     this.add.rectangle(360, 640, 720, 1280, 0x1e3799, 0.6);
 
-    this.COLS = 6; this.ROWS = 6; this.TILE_SIZE = 85; this.GAP = 4;
-    this.OFFSET_X = (720 - this.COLS * this.TILE_SIZE) / 2;
-    this.OFFSET_Y = 400;
-
-    this.grid = []; this.isBusy = false; this.isGameOver = false;
-    this.selectedTile = null; this.movesLeft = 15; this.fuzzEarned = 0;
+    this.grid = []; 
+    this.isBusy = false; 
+    this.isGameOver = false;
+    this.selectedTile = null; 
     this.pool = [0, 1, 2, 3, 4, 5];
 
     this.buildHUD();
     this.createBoard();
     this.setupInput();
 
-    this.createCandyButton(360, 1180, 300, 70, 'ЗАВЕРШИТЬ', 0x3498db, () => {
-      if (!this.isBusy && !this.isGameOver) this.endGame();
+    // Кнопка ВЫХОД
+    this.createCandyButton(100, 50, 120, 50, '← МЕНЮ', 0x3498db, () => {
+      this.scene.start('HubScene');
     });
   }
 
   buildHUD() {
-    this.add.graphics().fillStyle(0xffffff, 0.15).fillRoundedRect(20, 40, 180, 60, 20).lineStyle(3, 0xffffff, 0.5).strokeRoundedRect(20, 40, 180, 60, 20);
-    this.movesText = this.add.text(110, 70, `Ходы: ${this.movesLeft}`, { fontSize: '24px', color: '#ffffff', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5);
+    // Уровень
+    this.add.graphics().fillStyle(0xffffff, 0.15).fillRoundedRect(20, 120, 180, 60, 15).lineStyle(3, 0xffffff, 0.5).strokeRoundedRect(20, 120, 180, 60, 15);
+    this.levelText = this.add.text(110, 150, `Уровень ${this.level}`, { fontSize: '22px', color: '#ffffff', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5);
 
-    this.add.graphics().fillStyle(0xffffff, 0.15).fillRoundedRect(520, 40, 180, 60, 20).lineStyle(3, 0xffcc00, 0.8).strokeRoundedRect(520, 40, 180, 60, 20);
-    this.add.text(550, 70, '💰', { fontSize: '28px' }).setOrigin(0, 0.5);
-    this.fuzzText = this.add.text(600, 70, `0`, { fontSize: '24px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0, 0.5);
+    // Ходы
+    this.add.graphics().fillStyle(0xffffff, 0.15).fillRoundedRect(520, 120, 180, 60, 15).lineStyle(3, 0xffffff, 0.5).strokeRoundedRect(520, 120, 180, 60, 15);
+    this.movesText = this.add.text(610, 150, `Ходы: ${this.movesLeft}`, { fontSize: '22px', color: '#ffffff', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5);
+
+    // Очки и Цель
+    this.add.graphics().fillStyle(0xffffff, 0.15).fillRoundedRect(160, 200, 400, 60, 15).lineStyle(3, 0xffcc00, 0.8).strokeRoundedRect(160, 200, 400, 60, 15);
+    this.scoreText = this.add.text(360, 230, `Очки: 0 / ${this.targetScore}`, { fontSize: '24px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5);
   }
 
-  updateMovesUI() { this.movesText.setText(`Ходы: ${this.movesLeft}`); }
-  updateFuzzUI() { this.fuzzText.setText(`${this.fuzzEarned}`); }
+  updateHUD() {
+    this.movesText.setText(`Ходы: ${this.movesLeft}`);
+    this.scoreText.setText(`Очки: ${this.score} / ${this.targetScore}`);
+  }
 
   createBoard() {
     const boardW = this.COLS * this.TILE_SIZE + 20;
     const boardH = this.ROWS * this.TILE_SIZE + 20;
+    
+    // Красивая подложка
     this.add.graphics().fillStyle(0x2c3e50, 0.9).fillRoundedRect(this.OFFSET_X - 10, this.OFFSET_Y - 10, boardW, boardH, 25).lineStyle(4, 0x3498db, 1).strokeRoundedRect(this.OFFSET_X - 10, this.OFFSET_Y - 10, boardW, boardH, 25);
 
     for (let row = 0; row < this.ROWS; row++) {
@@ -46,7 +69,8 @@ export default class FarmScene extends Phaser.Scene {
       for (let col = 0; col < this.COLS; col++) {
         let cIdx, isMatch;
         do {
-          isMatch = false; cIdx = Phaser.Utils.Array.GetRandom(this.pool);
+          isMatch = false; 
+          cIdx = Phaser.Utils.Array.GetRandom(this.pool);
           if (col >= 2 && this.grid[row][col - 1].colorIndex === cIdx && this.grid[row][col - 2].colorIndex === cIdx) isMatch = true;
           if (row >= 2 && this.grid[row - 1][col].colorIndex === cIdx && this.grid[row - 2][col].colorIndex === cIdx) isMatch = true;
         } while (isMatch);
@@ -59,7 +83,7 @@ export default class FarmScene extends Phaser.Scene {
     const x = this.OFFSET_X + col * this.TILE_SIZE + this.TILE_SIZE / 2;
     const y = this.OFFSET_Y + row * this.TILE_SIZE + this.TILE_SIZE / 2;
     
-    const tileBg = this.add.graphics().fillStyle(0x34495e, 1).fillRoundedRect(-this.TILE_SIZE/2 + 4, -this.TILE_SIZE/2 + 4, this.TILE_SIZE - 8, this.TILE_SIZE - 8, 15);
+    const tileBg = this.add.graphics().fillStyle(0x34495e, 1).fillRoundedRect(-this.TILE_SIZE/2 + 2, -this.TILE_SIZE/2 + 2, this.TILE_SIZE - 4, this.TILE_SIZE - 4, 12);
     tileBg.setPosition(x, y);
 
     const tile = this.add.image(x, y, 'weapon' + colorIndex).setDisplaySize(this.TILE_SIZE - this.GAP - 10, this.TILE_SIZE - this.GAP - 10);
@@ -110,10 +134,18 @@ export default class FarmScene extends Phaser.Scene {
     const tr = t1.gridRow; t1.gridRow = t2.gridRow; t2.gridRow = tr;
     const tc = t1.gridCol; t1.gridCol = t2.gridCol; t2.gridCol = tc;
 
-    this.tweens.add({ targets: [t1, t1.bg, t2, t2.bg], x: (t) => (t === t1) ? this.OFFSET_X + t1.gridCol * this.TILE_SIZE + this.TILE_SIZE / 2 : (t === t2 ? this.OFFSET_X + t2.gridCol * this.TILE_SIZE + this.TILE_SIZE / 2 : t.x), y: (t) => (t === t1) ? this.OFFSET_Y + t1.gridRow * this.TILE_SIZE + this.TILE_SIZE / 2 : (t === t2 ? this.OFFSET_Y + t2.gridRow * this.TILE_SIZE + this.TILE_SIZE / 2 : t.y), duration: 200, ease: 'Back.easeOut',
+    this.tweens.add({ targets: [t1, t1.bg, t2, t2.bg], 
+      x: (t) => (t === t1) ? this.OFFSET_X + t1.gridCol * this.TILE_SIZE + this.TILE_SIZE / 2 : (t === t2 ? this.OFFSET_X + t2.gridCol * this.TILE_SIZE + this.TILE_SIZE / 2 : t.x), 
+      y: (t) => (t === t1) ? this.OFFSET_Y + t1.gridRow * this.TILE_SIZE + this.TILE_SIZE / 2 : (t === t2 ? this.OFFSET_Y + t2.gridRow * this.TILE_SIZE + this.TILE_SIZE / 2 : t.y), 
+      duration: 200, ease: 'Back.easeOut',
       onComplete: () => {
         const matches = this.findMatches();
-        if (matches.length > 0) { this.movesLeft--; this.updateMovesUI(); t1.bg.destroy(); t2.bg.destroy(); this.removeTiles(matches); }
+        if (matches.length > 0) { 
+            this.movesLeft--; 
+            this.updateHUD(); 
+            t1.bg.destroy(); t2.bg.destroy(); 
+            this.removeTiles(matches); 
+        }
         else this.swapBack(t1, t2);
       }
     });
@@ -123,7 +155,12 @@ export default class FarmScene extends Phaser.Scene {
     this.grid[t1.gridRow][t1.gridCol] = t2; this.grid[t2.gridRow][t2.gridCol] = t1;
     const tr = t1.gridRow; t1.gridRow = t2.gridRow; t2.gridRow = tr;
     const tc = t1.gridCol; t1.gridCol = t2.gridCol; t2.gridCol = tc;
-    this.tweens.add({ targets: [t1, t1.bg, t2, t2.bg], x: (t) => (t === t1) ? this.OFFSET_X + t1.gridCol * this.TILE_SIZE + this.TILE_SIZE / 2 : (t === t2 ? this.OFFSET_X + t2.gridCol * this.TILE_SIZE + this.TILE_SIZE / 2 : t.x), y: (t) => (t === t1) ? this.OFFSET_Y + t1.gridRow * this.TILE_SIZE + this.TILE_SIZE / 2 : (t === t2 ? this.OFFSET_Y + t2.gridRow * this.TILE_SIZE + this.TILE_SIZE / 2 : t.y), duration: 200, ease: 'Back.easeIn', onComplete: () => { this.isBusy = false; } });
+    this.tweens.add({ targets: [t1, t1.bg, t2, t2.bg], 
+      x: (t) => (t === t1) ? this.OFFSET_X + t1.gridCol * this.TILE_SIZE + this.TILE_SIZE / 2 : (t === t2 ? this.OFFSET_X + t2.gridCol * this.TILE_SIZE + this.TILE_SIZE / 2 : t.x), 
+      y: (t) => (t === t1) ? this.OFFSET_Y + t1.gridRow * this.TILE_SIZE + this.TILE_SIZE / 2 : (t === t2 ? this.OFFSET_Y + t2.gridRow * this.TILE_SIZE + this.TILE_SIZE / 2 : t.y), 
+      duration: 200, ease: 'Back.easeIn', 
+      onComplete: () => { this.isBusy = false; } 
+    });
   }
 
   findMatches() {
@@ -140,15 +177,21 @@ export default class FarmScene extends Phaser.Scene {
   }
 
   removeTiles(tiles) {
-    // ИСПРАВЛЕНИЕ: Теперь точно обновляется UI и начисляются фузы
-    this.fuzzEarned += tiles.length * 20; 
-    this.updateFuzzUI();
+    // Начисляем очки за каждую фишку
+    this.score += tiles.length * 50;
     
+    // Если собрали 4 или 5 - даем больше очков
+    if (tiles.length === 4) this.score += 100;
+    if (tiles.length >= 5) this.score += 250;
+    
+    this.updateHUD();
+
     tiles.forEach(t => { 
         this.grid[t.gridRow][t.gridCol] = null; 
         t.bg.destroy(); 
         this.tweens.add({ targets: t, scale: 0, alpha: 0, duration: 200, onComplete: () => t.destroy() }); 
     });
+    
     this.time.delayedCall(200, () => this.applyGravity());
   }
 
@@ -173,31 +216,62 @@ export default class FarmScene extends Phaser.Scene {
         this.tweens.add({ targets: [t, t.bg], y: this.OFFSET_Y + r * this.TILE_SIZE + this.TILE_SIZE / 2, duration: 250, ease: 'Bounce.easeOut' });
       }
     }
+    
+    // Ждем завершения падения и проверяем каскады
     this.time.delayedCall(350, () => {
       const nm = this.findMatches();
-      if (nm.length > 0) this.removeTiles(nm);
-      else { 
-          this.isBusy = false; 
-          if (this.movesLeft <= 0) this.endGame(); 
+      if (nm.length > 0) {
+        this.removeTiles(nm);
+      } else {
+        // ЖЕСТКАЯ ПРОВЕРКА: снимаем блокировку только здесь
+        this.isBusy = false; 
+        this.checkLevelStatus();
       }
     });
   }
 
-  endGame() {
-    if (this.isGameOver) return; 
-    this.isGameOver = true; 
-    Save.addFuzz(this.fuzzEarned);
-    
-    this.add.rectangle(360, 640, 720, 1280, 0x000000, 0.85).setDepth(100);
-    this.add.graphics().setDepth(101).fillStyle(0x2c3e50, 0.95).fillRoundedRect(160, 440, 400, 400, 30).lineStyle(4, 0x2ecc71, 1).strokeRoundedRect(160, 440, 400, 400, 30);
-    this.add.text(360, 520, 'ИГРА ОКОНЧЕНА', { fontSize: '40px', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5).setDepth(102);
-    this.add.text(360, 620, `Собрано фузов:\n${this.fuzzEarned}`, { fontSize: '32px', color: '#f1c40f', align: 'center', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5).setDepth(102);
+  checkLevelStatus() {
+    if (this.score >= this.targetScore) {
+      // ПОБЕДА НА УРОВНЕ
+      this.isGameOver = true;
+      
+      // Даем 30 фузов за уровень
+      Save.addFuzz(30); 
 
-    const btn = this.add.container(360, 740).setDepth(102);
-    const bg = this.add.graphics().fillStyle(0x2ecc71, 1).fillRoundedRect(-150, -40, 300, 80, 30).lineStyle(6, 0xffffff, 1).strokeRoundedRect(-150, -40, 300, 80, 30);
-    btn.add([bg, this.add.text(0, 0, 'ЗАБРАТЬ', { fontSize: '36px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 5 }).setOrigin(0.5)]);
-    btn.setSize(300, 80).setInteractive();
-    btn.on('pointerup', () => this.time.delayedCall(100, () => this.scene.start('HubScene')));
+      this.add.rectangle(360, 640, 720, 1280, 0x000000, 0.85).setDepth(100);
+      this.add.graphics().setDepth(101).fillStyle(0x2c3e50, 0.95).fillRoundedRect(160, 440, 400, 400, 30).lineStyle(4, 0x2ecc71, 1).strokeRoundedRect(160, 440, 400, 400, 30);
+      
+      this.add.text(360, 520, 'УРОВЕНЬ ПРОЙДЕН!', { fontSize: '36px', color: '#2ecc71', fontStyle: 'bold', stroke: '#000', strokeThickness: 5 }).setOrigin(0.5).setDepth(102);
+      this.add.text(360, 590, `Награда: 30 Фузов`, { fontSize: '24px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5).setDepth(102);
+
+      const btn = this.add.container(360, 720).setDepth(102);
+      const bg = this.add.graphics().fillStyle(0x2ecc71, 1).fillRoundedRect(-150, -40, 300, 80, 30).lineStyle(6, 0xffffff, 1).strokeRoundedRect(-150, -40, 300, 80, 30);
+      btn.add([bg, this.add.text(0, 0, 'ДАЛЬШЕ', { fontSize: '36px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 5 }).setOrigin(0.5)]);
+      btn.setSize(300, 80).setInteractive();
+      btn.on('pointerup', () => this.scene.restart({ level: this.level + 1 }));
+      
+    } else if (this.movesLeft <= 0) {
+      // ПОРАЖЕНИЕ
+      this.isGameOver = true;
+      
+      this.add.rectangle(360, 640, 720, 1280, 0x000000, 0.85).setDepth(100);
+      this.add.graphics().setDepth(101).fillStyle(0x2c3e50, 0.95).fillRoundedRect(160, 440, 400, 400, 30).lineStyle(4, 0xe74c3c, 1).strokeRoundedRect(160, 440, 400, 400, 30);
+      
+      this.add.text(360, 520, 'НЕ ХВАТИЛО ОЧКОВ', { fontSize: '36px', color: '#e74c3c', fontStyle: 'bold', stroke: '#000', strokeThickness: 5 }).setOrigin(0.5).setDepth(102);
+      this.add.text(360, 590, `Собрано: ${this.score} / ${this.targetScore}`, { fontSize: '24px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5).setDepth(102);
+
+      const btnTry = this.add.container(360, 700).setDepth(102);
+      const bgTry = this.add.graphics().fillStyle(0x3498db, 1).fillRoundedRect(-120, -35, 240, 70, 25).lineStyle(4, 0xffffff, 1).strokeRoundedRect(-120, -35, 240, 70, 25);
+      btnTry.add([bgTry, this.add.text(0, 0, 'ЗАНОВО', { fontSize: '32px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5)]);
+      btnTry.setSize(240, 70).setInteractive();
+      btnTry.on('pointerup', () => this.scene.restart({ level: this.level }));
+
+      const btnMenu = this.add.container(360, 800).setDepth(102);
+      const bgMenu = this.add.graphics().fillStyle(0x2c3e50, 1).fillRoundedRect(-120, -35, 240, 70, 25).lineStyle(4, 0xffffff, 1).strokeRoundedRect(-120, -35, 240, 70, 25);
+      btnMenu.add([bgMenu, this.add.text(0, 0, 'В МЕНЮ', { fontSize: '32px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5)]);
+      btnMenu.setSize(240, 70).setInteractive();
+      btnMenu.on('pointerup', () => this.scene.start('HubScene'));
+    }
   }
 
   createCandyButton(x, y, width, height, text, color, onClick) {
@@ -205,7 +279,7 @@ export default class FarmScene extends Phaser.Scene {
     const shadow = this.add.graphics().fillStyle(Phaser.Display.Color.IntegerToColor(color).darken(30).color, 1).fillRoundedRect(-width/2, -height/2 + 8, width, height, 20);
     const bg = this.add.graphics().fillStyle(color, 1).fillRoundedRect(-width/2, -height/2, width, height, 20);
     const highlight = this.add.graphics().fillStyle(0xffffff, 0.3).fillRoundedRect(-width/2 + 5, -height/2 + 5, width - 10, height / 2, 15);
-    const txt = this.add.text(0, 0, text, { fontSize: '28px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5);
+    const txt = this.add.text(0, 0, text, { fontSize: '24px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5);
 
     container.add([shadow, bg, highlight, txt]);
     container.setSize(width, height).setInteractive({ useHandCursor: true });
