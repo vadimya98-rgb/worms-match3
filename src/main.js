@@ -7,7 +7,8 @@ import FarmScene from './scenes/FarmScene.js';
 import ShopScene from './scenes/ShopScene.js';
 import BossListScene from './scenes/BossListScene.js';
 import BossDetailScene from './scenes/BossDetailScene.js';
-import BossBattleScene from './scenes/BossBattleScene.js'; // Импортируем бой
+import BossBattleScene from './scenes/BossBattleScene.js';
+import DailyBonusScene from './scenes/DailyBonusScene.js'; // Импортируем бонус
 
 const config = {
   type: Phaser.AUTO,
@@ -29,7 +30,8 @@ const config = {
     ShopScene,
     BossListScene,
     BossDetailScene,
-    BossBattleScene // Добавили сцену боя
+    BossBattleScene,
+    DailyBonusScene // Добавили сцену бонуса
   ],
 };
 
