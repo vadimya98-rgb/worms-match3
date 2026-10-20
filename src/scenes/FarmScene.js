@@ -140,7 +140,9 @@ export default class FarmScene extends Phaser.Scene {
   }
 
   removeTiles(tiles) {
-    this.fuzzEarned += tiles.length * 10; this.updateFuzzUI();
+    // Было: this.fuzzEarned += tiles.length * 10;
+// Стало:
+this.fuzzEarned += tiles.length * 20; 
     tiles.forEach(t => { this.grid[t.gridRow][t.gridCol] = null; t.bg.destroy(); this.tweens.add({ targets: t, scale: 0, alpha: 0, duration: 200, onComplete: () => t.destroy() }); });
     this.time.delayedCall(200, () => this.applyGravity());
   }
