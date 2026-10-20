@@ -134,8 +134,6 @@ export default class BossBattleScene extends Phaser.Scene {
 
     this.team.forEach((char, index) => {
       const isActive = (index === this.activeCharIndex);
-      
-      // ИСПРАВЛЕНИЕ: Персонаж смещен вправо (x = 580), чтобы не перекрывать предметы
       const x = isActive ? 360 : 580; 
       const y = 1060; 
       
@@ -290,7 +288,8 @@ export default class BossBattleScene extends Phaser.Scene {
 
     for (let colorIndex in groups) {
         const group = groups[colorIndex];
-        const weapon = WEAPONS[colorIndex];
+        const wId = parseInt(colorIndex); // ИСПРАВЛЕНИЕ: КОНВЕРТИРУЕМ В ЧИСЛО
+        const weapon = WEAPONS[wId];
         
         let comboMult = 1;
         if (group.length === 4) comboMult = 1.5;
@@ -300,7 +299,7 @@ export default class BossBattleScene extends Phaser.Scene {
         delayCounter++;
 
         this.time.delayedCall(delay, () => {
-            this.shootProjectile(colorIndex, group[0].x, group[0].y, this.bossSprite.x, this.bossSprite.y, () => {
+            this.shootProjectile(wId, group[0].x, group[0].y, this.bossSprite.x, this.bossSprite.y, () => {
                 let dmgHp = Math.floor(weapon.damage * comboMult);
                 let dmgArmor = 0;
 
