@@ -11,7 +11,7 @@ export default class BossDetailScene extends Phaser.Scene {
     this.bossIndex = data.bossIndex;
     this.boss = BOSSES[this.bossIndex];
     
-    // Массив для хранения ID выбранных персонажей (максимум 2)
+    // Массив для хранения ID выбранных персонажей (от 1 до 2)
     this.selectedChars = []; 
   }
 
@@ -34,7 +34,7 @@ export default class BossDetailScene extends Phaser.Scene {
     this.add.rectangle(360, 420, 600, 2, 0x444488);
 
     // Заголовок выбора персонажей
-    this.add.text(360, 460, 'ВЫБЕРИТЕ ДВУХ ПЕРСОНАЖЕЙ', { fontSize: '28px', color: '#ffffff' }).setOrigin(0.5);
+    this.add.text(360, 460, 'ВЫБЕРИТЕ ДО ДВУХ ПЕРСОНАЖЕЙ', { fontSize: '28px', color: '#ffffff' }).setOrigin(0.5);
 
     // Отрисовка доступных персонажей
     this.renderCharacterSelection();
@@ -46,11 +46,11 @@ export default class BossDetailScene extends Phaser.Scene {
     this.startBtn.setInteractive();
     
     this.startBtn.on('pointerdown', () => {
-      // Проверяем, выбрано ли ровно 2 персонажа
-      if (this.selectedChars.length === 2) {
-        // Передаем массив выбранных персонажей в сцену боя (пока заглушка, сделаем в 5Б)
-        // this.scene.start('BossBattleScene', { bossIndex: this.bossIndex, team: this.selectedChars });
+      // Проверяем, что выбран хотя бы один персонаж
+      if (this.selectedChars.length >= 1) {
+        // Передаем в сцену боя. Пока только лог, бой сделаем в следующем блоке.
         console.log('Готов к бою с:', this.selectedChars);
+        // this.scene.start('BossBattleScene', { bossIndex: this.bossIndex, team: this.selectedChars });
       }
     });
   }
@@ -98,11 +98,11 @@ export default class BossDetailScene extends Phaser.Scene {
         const index = this.selectedChars.indexOf(char.id);
         
         if (index > -1) {
-          // Если уже выбран, убираем из выбора
+          // Если уже выбран — убираем из выбора
           this.selectedChars.splice(index, 1);
           indicator.setFillStyle(0x333366);
         } else {
-          // Если не выбран, но уже есть 2, ничего не делаем
+          // Если уже выбрано 2 персонажа — больше не пускаем
           if (this.selectedChars.length >= 2) return;
           
           // Добавляем в выбор
@@ -118,7 +118,8 @@ export default class BossDetailScene extends Phaser.Scene {
 
   // Меняет цвет и активность кнопки "В БОЙ"
   updateStartButton() {
-    if (this.selectedChars.length === 2) {
+    // Кнопка зеленая, если выбран хотя бы один персонаж (1 или 2)
+    if (this.selectedChars.length >= 1) {
       this.startBtn.setBackgroundColor('#22aa44'); // Зеленая
     } else {
       this.startBtn.setBackgroundColor('#555555'); // Серая
