@@ -3,7 +3,8 @@ import SplashScene from './scenes/SplashScene.js';
 import StarterWormScene from './scenes/StarterWormScene.js';
 import HubScene from './scenes/HubScene.js';
 import StubScene from './scenes/StubScene.js';
-import FarmScene from './scenes/FarmScene.js'; // Импортируем новую сцену Фарма
+import FarmScene from './scenes/FarmScene.js';
+import ShopScene from './scenes/ShopScene.js'; // Импортируем новую сцену магазина
 
 const config = {
   type: Phaser.AUTO,
@@ -22,7 +23,8 @@ const config = {
     StarterWormScene, 
     HubScene, 
     StubScene, 
-    FarmScene // Добавили FarmScene в конец списка
+    FarmScene,
+    ShopScene // Добавили ShopScene в конец списка
   ],
 };
 
