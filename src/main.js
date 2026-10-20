@@ -3,6 +3,7 @@ import SplashScene from './scenes/SplashScene.js';
 import StarterWormScene from './scenes/StarterWormScene.js';
 import HubScene from './scenes/HubScene.js';
 import StubScene from './scenes/StubScene.js';
+import FarmScene from './scenes/FarmScene.js'; // Импортируем новую сцену Фарма
 
 const config = {
   type: Phaser.AUTO,
@@ -14,7 +15,15 @@ const config = {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
-  scene: [BootScene, SplashScene, StarterWormScene, HubScene, StubScene],
+  // Список всех сцен игры
+  scene: [
+    BootScene, 
+    SplashScene, 
+    StarterWormScene, 
+    HubScene, 
+    StubScene, 
+    FarmScene // Добавили FarmScene в конец списка
+  ],
 };
 
 const game = new Phaser.Game(config);
