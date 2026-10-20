@@ -45,8 +45,7 @@ export default class BossBattleScene extends Phaser.Scene {
     this.createBoard();
     this.setupInput();
     
-    // Показываем, что ход игрока при старте
-    this.showTurnBanner('ВАШ ХОД', '#2ecc71');
+    this.showTurnBanner('ВАШ ХОД', 0x2ecc71);
   }
 
   buildUI() {
@@ -261,13 +260,8 @@ export default class BossBattleScene extends Phaser.Scene {
     this.time.delayedCall(3500, () => this.applyGravity());
   }
 
-  // ИСПРАВЛЕНА ОШИБКА С ЦВЕТОМ
-  showTurnBanner(text, colorStr) {
+  showTurnBanner(text, colorNum) {
     this.isBusy = true;
-    
-    // Конвертируем строку цвета в число для графики
-    let colorNum = Phaser.Display.Color.HexStringToColor(colorStr).color;
-
     const bannerBg = this.add.graphics();
     bannerBg.fillStyle(0x000000, 0.8);
     bannerBg.fillRoundedRect(160, 600, 400, 100, 30);
@@ -275,7 +269,7 @@ export default class BossBattleScene extends Phaser.Scene {
     bannerBg.strokeRoundedRect(160, 600, 400, 100, 30);
     bannerBg.setDepth(200);
 
-    const txt = this.add.text(360, 650, text, { fontSize: '40px', color: colorStr, fontStyle: 'bold', stroke: '#000', strokeThickness: 5 }).setOrigin(0.5).setDepth(201);
+    const txt = this.add.text(360, 650, text, { fontSize: '40px', color: '#ffffff', fontStyle: 'bold', stroke: '#000', strokeThickness: 5 }).setOrigin(0.5).setDepth(201);
     
     bannerBg.setScale(0); txt.setScale(0);
     this.tweens.add({ targets: [bannerBg, txt], scale: 1, duration: 400, ease: 'Back.easeOut' });
@@ -356,8 +350,8 @@ export default class BossBattleScene extends Phaser.Scene {
         if (this.bossHp <= 0) this.winGame();
         else if (this.bossStunned) { 
             this.bossStunned = false; 
-            this.showTurnBanner('ХОД БОССА ПРОПУЩЕН', '#00ffff');
-            this.time.delayedCall(1500, () => this.showTurnBanner('ВАШ ХОД', '#2ecc71'));
+            this.showTurnBanner('ХОД БОССА ПРОПУЩЕН', 0x00ffff);
+            this.time.delayedCall(1500, () => this.showTurnBanner('ВАШ ХОД', 0x2ecc71));
         }
         else this.bossTurn();
       }
@@ -386,7 +380,7 @@ export default class BossBattleScene extends Phaser.Scene {
         let proj = this.add.particles(sx, sy, 'white_pixel', {
             speed: 400, angle: { min: 250, max: 290 },
             scale: { start: 2, end: 0 }, lifespan: 800,
-            tint: [0xff0000, 0xffa500, 0xffff00], blendMode: 'ADD'
+            tint: 0xff5500, blendMode: 'ADD'
         }).setDepth(150);
         
         this.time.delayedCall(800, () => {
@@ -395,7 +389,7 @@ export default class BossBattleScene extends Phaser.Scene {
             let fireOnBoss = this.add.particles(ex, ey, 'white_pixel', {
                 speed: { min: 50, max: 100 }, angle: { min: 0, max: 360 },
                 scale: { start: 1.5, end: 0 }, lifespan: 1000,
-                tint: [0xff0000, 0xffa500], blendMode: 'ADD'
+                tint: 0xff5500, blendMode: 'ADD'
             }).setDepth(160);
             this.bossSprite.setTint(0xff5500);
             this.time.delayedCall(1500, () => { fireOnBoss.destroy(); this.bossSprite.clearTint(); this.endCounterAttack(); });
@@ -480,7 +474,7 @@ export default class BossBattleScene extends Phaser.Scene {
   bossTurn() {
     if (this.isGameOver || this.isPaused) return;
     
-    this.showTurnBanner('ХОД БОССА', '#e74c3c');
+    this.showTurnBanner('ХОД БОССА', 0xe74c3c);
 
     this.time.delayedCall(2000, () => {
         if (this.poisonTurns > 0) { this.bossHp = Math.max(0, this.bossHp - 20); this.poisonTurns--; this.updateBossHpUI(); this.hitBoss(); }
@@ -502,7 +496,7 @@ export default class BossBattleScene extends Phaser.Scene {
             this.time.delayedCall(1000, () => { 
                 if (this.team[this.activeCharIndex].hp <= 0) this.loseGame(); 
                 else {
-                    this.showTurnBanner('ВАШ ХОД', '#2ecc71');
+                    this.showTurnBanner('ВАШ ХОД', 0x2ecc71);
                 }
             });
         });
