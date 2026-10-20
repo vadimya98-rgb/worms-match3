@@ -20,7 +20,8 @@ export default class BossBattleScene extends Phaser.Scene {
     this.bossArmor = this.bossData.armor;
     this.isBusy = false; this.isGameOver = false; this.isPaused = false;
     this.playerMovesCount = 0;
-    this.bleedTurns = 0; this.poisonTurns = 0;
+    this.bossPoisonTurns = 0; 
+    this.bossPoisonCloud = null; 
     
     const validTeam = data.team ? data.team.filter(id => id !== null) : [];
     
@@ -80,15 +81,13 @@ export default class BossBattleScene extends Phaser.Scene {
     this.podiumGraphics = this.add.graphics();
     this.drawPodium();
 
-    // ВЕРТИКАЛЬНАЯ ПОЛОСКА HP СЛЕВА (ИСПРАВЛЕНО НА GRAPHICS)
     this.add.rectangle(180, 220, 24, 140, 0x333333).setStrokeStyle(2, 0xffffff);
-    this.bossHpBar = this.add.graphics(); // БЫЛО RECTANGLE, СТАЛО GRAPHICS
+    this.bossHpBar = this.add.graphics();
     this.bossHpText = this.add.text(180, 300, `${this.bossHp}`, { fontSize: '16px', color: '#ffffff', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5, 0);
 
-    // ВЕРТИКАЛЬНАЯ ПОЛОСКА БРОНИ СПРАВА (ИСПРАВЛЕНО НА GRAPHICS)
     if (this.bossArmor > 0) {
         this.add.rectangle(540, 220, 16, 140, 0x333333).setStrokeStyle(2, 0xaaaaaa);
-        this.bossArmorBar = this.add.graphics(); // БЫЛО RECTANGLE, СТАЛО GRAPHICS
+        this.bossArmorBar = this.add.graphics();
         this.bossArmorText = this.add.text(540, 300, `${this.bossArmor}`, { fontSize: '14px', color: '#33ccff', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5, 0);
     }
 
@@ -135,7 +134,9 @@ export default class BossBattleScene extends Phaser.Scene {
 
     this.team.forEach((char, index) => {
       const isActive = (index === this.activeCharIndex);
-      const x = isActive ? 360 : 150;
+      
+      // ИСПРАВЛЕНИЕ: Персонаж смещен вправо (x = 580), чтобы не перекрывать предметы
+      const x = isActive ? 360 : 580; 
       const y = 1060; 
       
       const bgCircle = this.add.graphics().fillStyle(0x2c3e50, 0.9).fillCircle(x, y, 65);
@@ -273,43 +274,60 @@ export default class BossBattleScene extends Phaser.Scene {
   }
 
   removeTiles(tiles) {
-    const weapon = WEAPONS[tiles[0].colorIndex];
-    
+    const groups = {};
+    tiles.forEach(t => {
+        if (!groups[t.colorIndex]) groups[t.colorIndex] = [];
+        groups[t.colorIndex].push(t);
+    });
+
     tiles.forEach(t => { 
         this.grid[t.gridRow][t.gridCol] = null; 
         t.bg.destroy(); 
         t.destroy(); 
     });
 
-    let comboMult = 1;
-    if (tiles.length === 4) comboMult = 1.5;
-    if (tiles.length >= 5) comboMult = 2;
+    let delayCounter = 0;
 
-    this.shootProjectile(tiles[0].colorIndex, tiles[0].x, tiles[0].y, this.bossSprite.x, this.bossSprite.y, () => {
-        let dmgHp = Math.floor(weapon.damage * comboMult);
-        let dmgArmor = 0;
-
-        if (weapon.armorPierce > 0 && this.bossArmor > 0) { dmgArmor = weapon.armorPierce * comboMult; dmgHp = 0; }
-        else if (this.bossArmor > 0) { dmgArmor = weapon.damage * comboMult; dmgHp = 0; }
-
-        if (dmgArmor > 0) {
-            this.bossArmor = Math.max(0, this.bossArmor - dmgArmor);
-            this.showFloatingText(this.bossSprite.x, this.bossSprite.y - 50, `-${dmgArmor} БР.`, '#3498db');
-        }
-        if (dmgHp > 0) {
-            this.bossHp = Math.max(0, this.bossHp - dmgHp);
-            this.showFloatingText(this.bossSprite.x, this.bossSprite.y - 50, `-${dmgHp}`, '#ff3333');
-        }
+    for (let colorIndex in groups) {
+        const group = groups[colorIndex];
+        const weapon = WEAPONS[colorIndex];
         
-        this.updateBossHpUI();
-        if (weapon.stun) { this.bossStunned = true; this.bossSprite.setTint(0x00ffff); this.time.delayedCall(2500, () => this.bossSprite.clearTint()); }
-        this.hitBoss();
-    });
+        let comboMult = 1;
+        if (group.length === 4) comboMult = 1.5;
+        if (group.length >= 5) comboMult = 2;
+
+        let delay = delayCounter * 300; 
+        delayCounter++;
+
+        this.time.delayedCall(delay, () => {
+            this.shootProjectile(colorIndex, group[0].x, group[0].y, this.bossSprite.x, this.bossSprite.y, () => {
+                let dmgHp = Math.floor(weapon.damage * comboMult);
+                let dmgArmor = 0;
+
+                if (weapon.armorPierce > 0 && this.bossArmor > 0) { dmgArmor = weapon.armorPierce * comboMult; dmgHp = 0; }
+                else if (this.bossArmor > 0) { dmgArmor = weapon.damage * comboMult; dmgHp = 0; }
+
+                if (dmgArmor > 0) {
+                    this.bossArmor = Math.max(0, this.bossArmor - dmgArmor);
+                    this.showFloatingText(this.bossSprite.x, this.bossSprite.y - 50, `-${dmgArmor} БР.`, '#3498db');
+                }
+                if (dmgHp > 0) {
+                    this.bossHp = Math.max(0, this.bossHp - dmgHp);
+                    this.showFloatingText(this.bossSprite.x, this.bossSprite.y - 50, `-${dmgHp}`, '#ff3333');
+                }
+                
+                this.updateBossHpUI();
+                if (weapon.stun) { this.bossStunned = true; this.bossSprite.setTint(0x00ffff); this.time.delayedCall(2500, () => this.bossSprite.clearTint()); }
+                this.hitBoss();
+                this.spawnSparks(this.bossSprite.x, this.bossSprite.y, 0xffaa00);
+            });
+        });
+    }
 
     this.playerMovesCount++; 
     this.renderTeamUI();
     
-    this.time.delayedCall(3500, () => this.applyGravity());
+    this.time.delayedCall(3500 + (delayCounter * 300), () => this.applyGravity());
   }
 
   showTurnBanner(text, colorNum) {
@@ -350,6 +368,23 @@ export default class BossBattleScene extends Phaser.Scene {
       proj = this.add.image(tx + 50, ty + 50, 'weapon5').setDisplaySize(40, 40).setDepth(150).setAlpha(0);
       this.tweens.add({ targets: proj, alpha: 1, duration: 500, onComplete: () => { this.time.delayedCall(1000, () => { proj.destroy(); this.cameras.main.flash(500, 0, 255, 255); onComplete(); }); }});
     }
+  }
+
+  spawnSparks(x, y, color) {
+    let emitter = this.add.particles(x, y, 'white_pixel', { 
+        speed: { min: 150, max: 400 }, angle: { min: 0, max: 360 }, 
+        scale: { start: 1.5, end: 0 }, lifespan: 1000, quantity: 20, 
+        tint: color, blendMode: 'ADD' 
+    }).setDepth(160);
+    
+    let blood = this.add.particles(x, y, 'white_pixel', { 
+        speed: { min: 50, max: 150 }, angle: { min: 45, max: 135 }, 
+        gravityY: 800, scale: { start: 0.8, end: 0.2 }, 
+        alpha: { start: 1, end: 0 }, lifespan: 1500, quantity: 15, 
+        tint: 0xff0000 
+    }).setDepth(159);
+    
+    this.time.delayedCall(1500, () => { emitter.destroy(); blood.destroy(); });
   }
 
   hitBoss() {
@@ -409,18 +444,19 @@ export default class BossBattleScene extends Phaser.Scene {
     const sx = 360;
     const sy = 1060;
 
-    let dmg = 150; 
-    this.bossHp = Math.max(0, this.bossHp - dmg); 
-    this.updateBossHpUI();
-    this.showFloatingText(ex, ey - 50, `-${dmg}`, '#ffaa00');
-
     if (activeChar.id === 'dragon') {
+        this.bossHp = Math.max(0, this.bossHp - 150); 
+        this.updateBossHpUI();
+        this.showFloatingText(ex, ey - 50, `-150`, '#ffaa00');
         let fire = this.add.text(sx, sy, '🔥', { fontSize: '50px' }).setDepth(150);
         this.tweens.add({ targets: fire, x: ex, y: ey, duration: 1000, ease: 'Power2', onComplete: () => {
-            fire.destroy(); this.hitBoss(); this.bossSprite.setTint(0xff5500);
+            fire.destroy(); this.hitBoss(); this.spawnSparks(ex, ey, 0xff5500); this.bossSprite.setTint(0xff5500);
             this.time.delayedCall(1000, () => { this.bossSprite.clearTint(); this.endCounterAttack(); });
         }});
     } else if (activeChar.id === 'cat') {
+        this.bossHp = Math.max(0, this.bossHp - 150); 
+        this.updateBossHpUI();
+        this.showFloatingText(ex, ey - 50, `-150`, '#ffaa00');
         this.cameras.main.flash(200, 255, 255, 255);
         let scratch = this.add.graphics().setDepth(160);
         scratch.lineStyle(8, 0xff0000, 1);
@@ -428,8 +464,11 @@ export default class BossBattleScene extends Phaser.Scene {
         scratch.lineBetween(ex - 20, ey - 50, ex + 60, ey + 30);
         scratch.lineBetween(ex - 60, ey - 30, ex + 20, ey + 50);
         this.bossSprite.setTint(0xff0000);
-        this.time.delayedCall(300, () => { this.hitBoss(); this.tweens.add({ targets: scratch, alpha: 0, duration: 1000, onComplete: () => { scratch.destroy(); this.bossSprite.clearTint(); this.endCounterAttack(); } }); });
+        this.time.delayedCall(300, () => { this.hitBoss(); this.spawnSparks(ex, ey, 0xff0000); this.tweens.add({ targets: scratch, alpha: 0, duration: 1000, onComplete: () => { scratch.destroy(); this.bossSprite.clearTint(); this.endCounterAttack(); } }); });
     } else if (activeChar.id === 'robot') {
+        this.bossHp = Math.max(0, this.bossHp - 150); 
+        this.updateBossHpUI();
+        this.showFloatingText(ex, ey - 50, `-150`, '#ffaa00');
         this.cameras.main.flash(300, 0, 255, 255);
         let lightning = this.add.graphics().setDepth(160);
         lightning.lineStyle(6, 0x00ffff, 1);
@@ -438,10 +477,19 @@ export default class BossBattleScene extends Phaser.Scene {
         for(let i=1; i<=6; i++) lightning.lineTo(Phaser.Math.Linear(sx, ex, i/6) + Phaser.Math.Between(-40, 40), Phaser.Math.Linear(sy, ey, i/6));
         lightning.strokePath();
         this.bossSprite.setTint(0x00ffff);
-        this.time.delayedCall(400, () => { lightning.destroy(); this.hitBoss(); this.tweens.add({ targets: this.bossSprite, alpha: 0.5, duration: 100, yoyo: true, repeat: 3, onComplete: () => { this.bossSprite.setAlpha(1); this.bossSprite.clearTint(); this.endCounterAttack(); } }); });
+        this.time.delayedCall(400, () => { lightning.destroy(); this.hitBoss(); this.spawnSparks(ex, ey, 0x00ffff); this.tweens.add({ targets: this.bossSprite, alpha: 0.5, duration: 100, yoyo: true, repeat: 3, onComplete: () => { this.bossSprite.setAlpha(1); this.bossSprite.clearTint(); this.endCounterAttack(); } }); });
     } else if (activeChar.id === 'zombie') {
+        this.bossHp = Math.max(0, this.bossHp - 40); 
+        this.bossPoisonTurns = 5;
+        this.updateBossHpUI();
+        this.showFloatingText(ex, ey - 50, `-40`, '#00ff00');
+        
         let poison = this.add.circle(ex, ey, 80, 0x00ff00, 0.6).setDepth(160);
-        this.tweens.add({ targets: poison, alpha: 0.1, yoyo: true, repeat: 4, duration: 300, onComplete: () => { poison.destroy(); this.hitBoss(); this.bossSprite.setTint(0x00ff00); this.time.delayedCall(1000, () => { this.bossSprite.clearTint(); this.endCounterAttack(); }); } });
+        if (this.bossPoisonCloud) this.bossPoisonCloud.destroy();
+        this.bossPoisonCloud = this.add.circle(ex, ey, 80, 0x00ff00, 0.4).setDepth(140);
+        this.tweens.add({ targets: this.bossPoisonCloud, alpha: 0.1, yoyo: true, repeat: -1, duration: 500 });
+
+        this.tweens.add({ targets: poison, alpha: 0.1, yoyo: true, repeat: 4, duration: 300, onComplete: () => { poison.destroy(); this.hitBoss(); this.spawnSparks(ex, ey, 0x00ff00); this.bossSprite.setTint(0x00ff00); this.time.delayedCall(1000, () => { this.bossSprite.clearTint(); this.endCounterAttack(); }); } });
     }
   }
 
@@ -468,6 +516,7 @@ export default class BossBattleScene extends Phaser.Scene {
 
         this.shootProjectile(bossWeaponId, this.bossSprite.x, this.bossSprite.y, 360, 1060, () => {
             this.cameras.main.shake(200, 0.03);
+            this.spawnSparks(360, 1060, 0xff0000); 
             
             let char = this.team[this.activeCharIndex];
             if (char.armor > 0) {
@@ -492,8 +541,24 @@ export default class BossBattleScene extends Phaser.Scene {
             if (bossWeapon.stun) this.showFloatingText(360, 1060, 'ЗАМОРОЖЕН', '#00ffff');
 
             this.time.delayedCall(1000, () => { 
-                if (char.hp <= 0) this.loseGame(); 
-                else this.showTurnBanner('ВАШ ХОД', 0x2ecc71);
+                if (char.hp <= 0) { this.loseGame(); return; }
+
+                if (this.bossPoisonTurns > 0) {
+                    this.bossHp = Math.max(0, this.bossHp - 40);
+                    this.bossPoisonTurns--;
+                    this.updateBossHpUI();
+                    this.showFloatingText(this.bossSprite.x, this.bossSprite.y - 50, `-40 ЯД`, '#00ff00');
+                    this.hitBoss();
+                    
+                    if (this.bossPoisonTurns === 0 && this.bossPoisonCloud) {
+                        this.bossPoisonCloud.destroy();
+                        this.bossPoisonCloud = null;
+                    }
+                    
+                    if (this.bossHp <= 0) { this.winGame(); return; }
+                }
+
+                this.showTurnBanner('ВАШ ХОД', 0x2ecc71);
             });
         });
     });
