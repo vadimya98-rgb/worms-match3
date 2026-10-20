@@ -48,9 +48,8 @@ export default class BossDetailScene extends Phaser.Scene {
     this.startBtn.on('pointerdown', () => {
       // Проверяем, что выбран хотя бы один персонаж
       if (this.selectedChars.length >= 1) {
-        // Передаем в сцену боя. Пока только лог, бой сделаем в следующем блоке.
-        console.log('Готов к бою с:', this.selectedChars);
-        // this.scene.start('BossBattleScene', { bossIndex: this.bossIndex, team: this.selectedChars });
+        // Переходим в сцену боя, передаем индекс босса и выбранную команду
+        this.scene.start('BossBattleScene', { bossIndex: this.bossIndex, team: this.selectedChars });
       }
     });
   }
