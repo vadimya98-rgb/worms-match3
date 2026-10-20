@@ -5,18 +5,7 @@ export default class FarmScene extends Phaser.Scene {
 
   create() {
     this.add.image(360, 640, 'bg').setDisplaySize(720, 1280);
-    this.add.rectangle(360, 640, 720, 1280, 0x000000, 0.5);
-
-    this.borderGraphics = this.add.graphics();
-    this.time.addEvent({
-      delay: 100,
-      callback: () => {
-        this.borderGraphics.clear();
-        let c = Phaser.Display.Color.HSVToRGB((this.time.now / 3000) % 1, 1, 1).color;
-        this.borderGraphics.lineStyle(8, c, 0.6).strokeRect(8, 8, 704, 1264);
-        this.borderGraphics.lineStyle(2, 0xffffff, 0.9).strokeRect(8, 8, 704, 1264);
-      }, loop: true
-    });
+    this.add.rectangle(360, 640, 720, 1280, 0x1e3799, 0.6);
 
     this.COLS = 6; this.ROWS = 6; this.TILE_SIZE = 85; this.GAP = 4;
     this.OFFSET_X = (720 - this.COLS * this.TILE_SIZE) / 2;
@@ -30,23 +19,21 @@ export default class FarmScene extends Phaser.Scene {
     this.createBoard();
     this.setupInput();
 
-    // Кнопка ЗАВЕРШИТЬ (Неоновая)
-    const endBtn = this.add.container(360, 1180);
-    const eBg = this.add.graphics().fillStyle(0x1a1a2e, 0.9).fillRoundedRect(-150, -35, 300, 70, 25).lineStyle(3, 0x00f0ff, 1).strokeRoundedRect(-150, -35, 300, 70, 25);
-    endBtn.add([eBg, this.add.text(0, 0, 'ЗАВЕРШИТЬ', { fontSize: '32px', color: '#00f0ff', fontStyle: 'bold' }).setOrigin(0.5)]);
-    endBtn.setSize(300, 70).setInteractive();
-    endBtn.on('pointerdown', () => { if (!this.isBusy && !this.isGameOver) this.endGame(); });
+    // 3D Кнопка ЗАВЕРШИТЬ
+    this.createCandyButton(360, 1180, 300, 70, 'ЗАВЕРШИТЬ', 0x3498db, () => {
+      if (!this.isBusy && !this.isGameOver) this.endGame();
+    });
   }
 
   buildHUD() {
-    // Рамка Ходы (Слева)
-    this.add.graphics().fillStyle(0x1a1a2e, 0.9).fillRoundedRect(20, 40, 180, 60, 20).lineStyle(3, 0xffffff, 0.8).strokeRoundedRect(20, 40, 180, 60, 20);
-    this.movesText = this.add.text(110, 70, `Ходы: ${this.movesLeft}`, { fontSize: '24px', color: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5);
+    // Ходы (Стекло)
+    this.add.graphics().fillStyle(0xffffff, 0.15).fillRoundedRect(20, 40, 180, 60, 20).lineStyle(3, 0xffffff, 0.5).strokeRoundedRect(20, 40, 180, 60, 20);
+    this.movesText = this.add.text(110, 70, `Ходы: ${this.movesLeft}`, { fontSize: '24px', color: '#ffffff', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5);
 
-    // Рамка Фузы (Справа)
-    this.add.graphics().fillStyle(0x1a1a2e, 0.9).fillRoundedRect(520, 40, 180, 60, 20).lineStyle(3, 0xffcc00, 1).strokeRoundedRect(520, 40, 180, 60, 20);
+    // Фузы (Стекло)
+    this.add.graphics().fillStyle(0xffffff, 0.15).fillRoundedRect(520, 40, 180, 60, 20).lineStyle(3, 0xffcc00, 0.8).strokeRoundedRect(520, 40, 180, 60, 20);
     this.add.text(550, 70, '💰', { fontSize: '28px' }).setOrigin(0, 0.5);
-    this.fuzzText = this.add.text(600, 70, `${this.fuzzEarned}`, { fontSize: '24px', color: '#ffcc00', fontStyle: 'bold' }).setOrigin(0, 0.5);
+    this.fuzzText = this.add.text(600, 70, `${this.fuzzEarned}`, { fontSize: '24px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0, 0.5);
   }
 
   updateMovesUI() { this.movesText.setText(`Ходы: ${this.movesLeft}`); }
@@ -55,7 +42,7 @@ export default class FarmScene extends Phaser.Scene {
   createBoard() {
     const boardW = this.COLS * this.TILE_SIZE + 20;
     const boardH = this.ROWS * this.TILE_SIZE + 20;
-    this.add.graphics().fillStyle(0x1a1a2e, 0.8).fillRoundedRect(this.OFFSET_X - 10, this.OFFSET_Y - 10, boardW, boardH, 25).lineStyle(4, 0x00f0ff, 0.6).strokeRoundedRect(this.OFFSET_X - 10, this.OFFSET_Y - 10, boardW, boardH, 25);
+    this.add.graphics().fillStyle(0x2c3e50, 0.9).fillRoundedRect(this.OFFSET_X - 10, this.OFFSET_Y - 10, boardW, boardH, 25).lineStyle(4, 0x3498db, 1).strokeRoundedRect(this.OFFSET_X - 10, this.OFFSET_Y - 10, boardW, boardH, 25);
 
     for (let row = 0; row < this.ROWS; row++) {
       this.grid[row] = [];
@@ -75,12 +62,12 @@ export default class FarmScene extends Phaser.Scene {
     const x = this.OFFSET_X + col * this.TILE_SIZE + this.TILE_SIZE / 2;
     const y = this.OFFSET_Y + row * this.TILE_SIZE + this.TILE_SIZE / 2;
     
-    const tileBg = this.add.graphics().fillStyle(0xffffff, 0.15).fillRoundedRect(-this.TILE_SIZE/2 + 2, -this.TILE_SIZE/2 + 2, this.TILE_SIZE - 4, this.TILE_SIZE - 4, 12);
+    const tileBg = this.add.graphics().fillStyle(0x34495e, 1).fillRoundedRect(-this.TILE_SIZE/2 + 4, -this.TILE_SIZE/2 + 4, this.TILE_SIZE - 8, this.TILE_SIZE - 8, 15);
     tileBg.setPosition(x, y);
 
     const tile = this.add.image(x, y, 'weapon' + colorIndex).setDisplaySize(this.TILE_SIZE - this.GAP - 10, this.TILE_SIZE - this.GAP - 10);
-    
     tile.gridRow = row; tile.gridCol = col; tile.colorIndex = colorIndex; tile.bg = tileBg;
+    
     tile.setInteractive();
     tile.on('pointerdown', () => {
       if (this.isBusy || this.isGameOver) return;
@@ -168,8 +155,7 @@ export default class FarmScene extends Phaser.Scene {
         if (this.grid[r][c] !== null) {
           if (r !== emptyRow) {
             const t = this.grid[r][c]; this.grid[emptyRow][c] = t; this.grid[r][c] = null; t.gridRow = emptyRow;
-            const targetY = this.OFFSET_Y + emptyRow * this.TILE_SIZE + this.TILE_SIZE / 2;
-            this.tweens.add({ targets: [t, t.bg], y: targetY, duration: 250, ease: 'Bounce.easeOut' });
+            this.tweens.add({ targets: [t, t.bg], y: this.OFFSET_Y + emptyRow * this.TILE_SIZE + this.TILE_SIZE / 2, duration: 250, ease: 'Bounce.easeOut' });
           }
           emptyRow--;
         }
@@ -194,15 +180,28 @@ export default class FarmScene extends Phaser.Scene {
     if (this.isGameOver) return; this.isGameOver = true; Save.addFuzz(this.fuzzEarned);
     this.add.rectangle(360, 640, 720, 1280, 0x000000, 0.85).setDepth(100);
     
-    const panel = this.add.graphics().setDepth(101).fillStyle(0x1a1a2e, 0.95).fillRoundedRect(160, 440, 400, 400, 30).lineStyle(4, 0x00ff9d, 1).strokeRoundedRect(160, 440, 400, 400, 30);
+    const panel = this.add.graphics().setDepth(101).fillStyle(0x2c3e50, 0.95).fillRoundedRect(160, 440, 400, 400, 30).lineStyle(4, 0x2ecc71, 1).strokeRoundedRect(160, 440, 400, 400, 30);
     this.add.text(360, 520, 'ИГРА ОКОНЧЕНА', { fontSize: '40px', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5).setDepth(102);
-    this.add.text(360, 620, `Собрано фузов:\n${this.fuzzEarned}`, { fontSize: '32px', color: '#ffcc00', align: 'center' }).setOrigin(0.5).setDepth(102);
+    this.add.text(360, 620, `Собрано фузов:\n${this.fuzzEarned}`, { fontSize: '32px', color: '#f1c40f', align: 'center', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5).setDepth(102);
 
-    // Закругленная кнопка ЗАБРАТЬ
     const btn = this.add.container(360, 740).setDepth(102);
-    const bg = this.add.graphics().fillStyle(0x00ff9d, 0.9).fillRoundedRect(-120, -30, 240, 60, 20);
-    btn.add([bg, this.add.text(0, 0, 'ЗАБРАТЬ', { fontSize: '32px', color: '#1a1a2e', fontStyle: 'bold' }).setOrigin(0.5)]);
-    btn.setSize(240, 60).setInteractive();
+    const bg = this.add.graphics().fillStyle(0x2ecc71, 1).fillRoundedRect(-150, -40, 300, 80, 30).lineStyle(6, 0xffffff, 1).strokeRoundedRect(-150, -40, 300, 80, 30);
+    btn.add([bg, this.add.text(0, 0, 'ЗАБРАТЬ', { fontSize: '36px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 5 }).setOrigin(0.5)]);
+    btn.setSize(300, 80).setInteractive();
     btn.on('pointerdown', () => this.scene.start('HubScene'));
+  }
+
+  createCandyButton(x, y, width, height, text, color, onClick) {
+    const container = this.add.container(x, y);
+    const shadow = this.add.graphics().fillStyle(Phaser.Display.Color.IntegerToColor(color).darken(30).color, 1).fillRoundedRect(-width/2, -height/2 + 8, width, height, 20);
+    const bg = this.add.graphics().fillStyle(color, 1).fillRoundedRect(-width/2, -height/2, width, height, 20);
+    const highlight = this.add.graphics().fillStyle(0xffffff, 0.3).fillRoundedRect(-width/2 + 5, -height/2 + 5, width - 10, height / 2, 15);
+    const txt = this.add.text(0, 0, text, { fontSize: '28px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5);
+
+    container.add([shadow, bg, highlight, txt]);
+    container.setSize(width, height).setInteractive({ useHandCursor: true });
+    container.on('pointerdown', () => { container.y += 5; });
+    container.on('pointerup', () => { container.y -= 5; onClick(); });
+    container.on('pointerout', () => { container.y = y; });
   }
 }
