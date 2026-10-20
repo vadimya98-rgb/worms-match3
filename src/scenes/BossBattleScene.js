@@ -17,7 +17,8 @@ export default class BossBattleScene extends Phaser.Scene {
     this.TILE_SIZE = 85; 
     this.GAP = 4;
     this.OFFSET_X = (720 - this.COLS * this.TILE_SIZE) / 2;
-    this.OFFSET_Y = 580;
+    // СДВИНУЛИ СЕТКУ ВВЕРХ (было 580)
+    this.OFFSET_Y = 320;
 
     this.bossHp = this.bossData.maxHp;
     this.bossArmor = this.bossData.armor;
@@ -25,13 +26,10 @@ export default class BossBattleScene extends Phaser.Scene {
     this.isGameOver = false;
     this.playerStunned = false; 
     this.bossStunned = false;
-    this.bossSkipNextTurn = false; // Для робота
+    this.bossSkipNextTurn = false; 
     
-    // Эффекты дебаффов на боссе
     this.bleedTurns = 0;
     this.poisonTurns = 0;
-
-    // Счетчик ходов для контр-удара (раз в 3 хода)
     this.playerMovesCount = 0;
     
     this.team = data.team.map(id => {
@@ -49,6 +47,7 @@ export default class BossBattleScene extends Phaser.Scene {
 
   create() {
     this.add.image(360, 640, 'bg').setDisplaySize(720, 1280);
+    this.add.rectangle(360, 640, 720, 1280, 0x000000, 0.3); // Легкое затемнение для контраста
 
     this.buildUI();
     this.createBoard();
@@ -56,39 +55,41 @@ export default class BossBattleScene extends Phaser.Scene {
   }
 
   buildUI() {
-    this.add.text(360, 40, this.bossData.name, { fontSize: '32px', color: '#ff3333', fontStyle: 'bold', stroke: '#000000', strokeThickness: 4 }).setOrigin(0.5);
+    this.add.text(360, 30, this.bossData.name, { fontSize: '32px', color: '#ff3333', fontStyle: 'bold', stroke: '#000000', strokeThickness: 4 }).setOrigin(0.5);
     
-    this.add.rectangle(360, 80, 500, 30, 0x333333).setStrokeStyle(2, 0xffffff);
-    this.bossHpBar = this.add.rectangle(110, 80, 500, 30, 0xff3333).setOrigin(0, 0.5);
-    this.bossHpText = this.add.text(360, 80, `${this.bossHp}/${this.bossData.maxHp}`, { fontSize: '20px', color: '#ffffff' }).setOrigin(0.5);
+    // ДЛИННАЯ ПОЛОСКА HP БОССА (Ширина 600)
+    this.add.rectangle(360, 70, 600, 25, 0x333333).setStrokeStyle(2, 0xffffff);
+    this.bossHpBar = this.add.rectangle(60, 70, 600, 25, 0xff3333).setOrigin(0, 0.5);
+    this.bossHpText = this.add.text(360, 70, `${this.bossHp}/${this.bossData.maxHp}`, { fontSize: '18px', color: '#ffffff' }).setOrigin(0.5);
 
+    // КОРОТКАЯ ПОЛОСКА БРОНИ (Ширина 400)
     if (this.bossArmor > 0) {
-      this.add.rectangle(360, 115, 500, 15, 0x333333).setStrokeStyle(2, 0xaaaaaa);
-      this.bossArmorBar = this.add.rectangle(110, 115, 500, 15, 0x3399ff).setOrigin(0, 0.5);
-      this.bossArmorText = this.add.text(360, 115, `Броня: ${this.bossArmor}`, { fontSize: '14px', color: '#ffffff' }).setOrigin(0.5);
+      this.add.rectangle(360, 105, 400, 12, 0x333333).setStrokeStyle(2, 0xaaaaaa);
+      this.bossArmorBar = this.add.rectangle(160, 105, 400, 12, 0x3399ff).setOrigin(0, 0.5);
+      this.bossArmorText = this.add.text(360, 105, `Броня: ${this.bossArmor}`, { fontSize: '12px', color: '#ffffff' }).setOrigin(0.5);
     }
 
-    // Иконки дебаффов
-    this.debuffText = this.add.text(360, 150, '', { fontSize: '20px', color: '#ff3333', fontStyle: 'bold', stroke: '#000000', strokeThickness: 3 }).setOrigin(0.5);
+    this.debuffText = this.add.text(360, 125, '', { fontSize: '18px', color: '#ff3333', fontStyle: 'bold', stroke: '#000000', strokeThickness: 3 }).setOrigin(0.5);
 
-    this.bossSprite = this.add.image(360, 240, 'boss' + this.bossIndex);
-    this.bossSprite.setDisplaySize(160, 160);
+    this.bossSprite = this.add.image(360, 210, 'boss' + this.bossIndex);
+    this.bossSprite.setDisplaySize(140, 140);
 
     this.charContainers = [];
     this.renderTeamUI();
 
-    this.medkitText = this.add.text(690, 520, `💊 x${Save.getMedkits()}`, { 
+    // АПТЕЧКА В ЛЕВОМ НИЖНЕМ УГЛУ
+    this.medkitText = this.add.text(30, 1180, `💊 x${Save.getMedkits()}`, { 
       fontSize: '24px', color: '#ffffff', backgroundColor: '#333366', padding: { x: 15, y: 10 },
       stroke: '#000000', strokeThickness: 3
-    }).setOrigin(1, 0.5);
+    }).setOrigin(0, 0.5);
     this.medkitText.setInteractive();
     this.medkitText.on('pointerdown', () => this.useMedkit());
 
-    // Кнопка КОНТР-УДАРА (пока неактивна)
-    this.ultBtn = this.add.text(30, 520, '🔥\nУДАР', { 
-      fontSize: '22px', color: '#888888', backgroundColor: '#222222', align: 'center', padding: { x: 10, y: 10 },
+    // УДАР В ПРАВОМ НИЖНЕМ УГЛУ
+    this.ultBtn = this.add.text(690, 1180, '🔥 УДАР', { 
+      fontSize: '22px', color: '#888888', backgroundColor: '#222222', padding: { x: 15, y: 10 },
       stroke: '#000000', strokeThickness: 2
-    }).setOrigin(0, 0.5);
+    }).setOrigin(1, 0.5);
     this.ultBtn.setInteractive();
     this.ultBtn.on('pointerdown', () => this.useCounterAttack());
   }
@@ -98,36 +99,40 @@ export default class BossBattleScene extends Phaser.Scene {
     this.charContainers = [];
 
     this.team.forEach((char, index) => {
-      const x = index === 0 ? 200 : 520;
-      const y = 420;
+      // АКТИВНЫЙ ПО ЦЕНТРУ (360), НЕАКТИВНЫЙ СЛЕВА (160)
       const isActive = (index === this.activeCharIndex);
+      const x = isActive ? 360 : 160;
+      const y = 980; // Позиция по вертикали (под сеткой)
+      
       const borderColor = isActive ? 0x33cc66 : 0x444488;
       
-      const bg = this.add.rectangle(x, y, 280, 120, 0x222244, 0.9).setStrokeStyle(4, borderColor);
+      // Круглая подложка под персонажа
+      const bgCircle = this.add.circle(x, y, 50, 0x222244).setStrokeStyle(4, borderColor);
       
-      const charImg = this.add.image(x - 90, y, char.id);
-      charImg.setDisplaySize(70, 70);
+      // Картинка персонажа
+      const charImg = this.add.image(x, y, char.id);
+      charImg.setDisplaySize(80, 80);
 
-      const name = this.add.text(x + 10, y - 30, `${char.name} ${isActive ? '(ХОД)' : ''}`, { 
+      // Имя и ХП НАД персонажем
+      const name = this.add.text(x, y - 95, `${char.name}`, { 
         fontSize: '20px', color: '#ffffff', stroke: '#000000', strokeThickness: 3 
       }).setOrigin(0.5);
-      
-      const hpBarBg = this.add.rectangle(x - 110, y + 25, 220, 15, 0x333333).setOrigin(0, 0.5);
+
+      const hpBarBg = this.add.rectangle(x - 40, y - 65, 80, 10, 0x333333).setOrigin(0, 0.5);
       const hpPercent = Math.max(0, char.hp / char.maxHp);
-      const hpBarFill = this.add.rectangle(x - 110, y + 25, 220 * hpPercent, 15, 0x33cc66).setOrigin(0, 0.5);
-      const hpText = this.add.text(x + 10, y + 25, `${char.hp}/${char.maxHp}`, { fontSize: '16px', color: '#ffffff' }).setOrigin(0.5);
+      const hpBarFill = this.add.rectangle(x - 40, y - 65, 80 * hpPercent, 10, 0x33cc66).setOrigin(0, 0.5);
+      const hpText = this.add.text(x, y - 80, `${char.hp}/${char.maxHp}`, { fontSize: '14px', color: '#ffffff', stroke: '#000000', strokeThickness: 2 }).setOrigin(0.5);
 
       if (char.hp > 0 && !this.isBusy && !this.isGameOver && !isActive) {
-        bg.setInteractive();
-        bg.on('pointerdown', () => { this.activeCharIndex = index; this.renderTeamUI(); });
+        bgCircle.setInteractive();
+        bgCircle.on('pointerdown', () => { this.activeCharIndex = index; this.renderTeamUI(); });
       }
 
-      this.charContainers.push(bg, charImg, name, hpBarBg, hpBarFill, hpText);
+      this.charContainers.push(bgCircle, charImg, name, hpBarBg, hpBarFill, hpText);
     });
   }
 
   updateUltButton() {
-    // Активируется каждый 3-й ход
     if (this.playerMovesCount >= 3) {
       this.ultBtn.setColor('#ffffff');
       this.ultBtn.setBackgroundColor('#ff6600');
@@ -303,7 +308,6 @@ export default class BossBattleScene extends Phaser.Scene {
       this.tweens.add({ targets: tile, scale: 0, alpha: 0, duration: 150, onComplete: () => tile.destroy() });
     });
 
-    // Увеличиваем счетчик ходов для контр-удара
     this.playerMovesCount++;
     this.updateUltButton();
 
@@ -352,11 +356,7 @@ export default class BossBattleScene extends Phaser.Scene {
     });
   }
 
-  // ==========================================
-  // КОНТР-УДАР
-  // ==========================================
   useCounterAttack() {
-    // Если кнопка неактивна или идет анимация - игнорируем
     if (this.playerMovesCount < 3 || this.isBusy || this.isGameOver) return;
 
     this.isBusy = true;
@@ -365,25 +365,23 @@ export default class BossBattleScene extends Phaser.Scene {
 
     const activeChar = this.team[this.activeCharIndex];
     
-    // Анимация выстрела от персонажа к боссу
-    this.shootProjectile(activeChar.x || 360, 420, this.bossSprite.x, this.bossSprite.y, 0xffaa00);
+    this.shootProjectile(360, 980, this.bossSprite.x, this.bossSprite.y, 0xffaa00);
 
-    // Применяем эффекты в зависимости от расы
     let ultDamage = 0;
     if (activeChar.id === 'dragon') {
       ultDamage = 70;
       this.showFloatingText(this.bossSprite.x, this.bossSprite.y - 40, 'ОГОНЬ!', '#ff5500');
     } else if (activeChar.id === 'cat') {
       ultDamage = 40;
-      this.bleedTurns += 2; // 2 хода кровотечения
+      this.bleedTurns += 2;
       this.showFloatingText(this.bossSprite.x, this.bossSprite.y - 40, 'КРОВОТЕЧЕНИЕ!', '#ff0000');
     } else if (activeChar.id === 'robot') {
       ultDamage = 80;
-      this.bossSkipNextTurn = true; // Босс пропустит ход
+      this.bossSkipNextTurn = true;
       this.showFloatingText(this.bossSprite.x, this.bossSprite.y - 40, 'ЭЛЕКТРОШОК!', '#ffff00');
     } else if (activeChar.id === 'zombie') {
       ultDamage = 25;
-      this.poisonTurns += 5; // 5 ходов яда
+      this.poisonTurns += 5;
       this.showFloatingText(this.bossSprite.x, this.bossSprite.y - 40, 'ЯД!', '#00ff00');
     }
 
@@ -391,7 +389,6 @@ export default class BossBattleScene extends Phaser.Scene {
     this.updateBossHpUI();
     this.updateDebuffUI();
 
-    // После контр-удара ход переходит к боссу
     this.time.delayedCall(600, () => {
       if (this.bossHp <= 0) this.winGame();
       else this.bossTurn();
@@ -405,13 +402,9 @@ export default class BossBattleScene extends Phaser.Scene {
     this.debuffText.setText(text);
   }
 
-  // ==========================================
-  // ХОД БОССА
-  // ==========================================
   bossTurn() {
     if (this.isGameOver) return;
 
-    // Проверяем, не пропускает ли босс ход (от робота)
     if (this.bossSkipNextTurn) {
       this.bossSkipNextTurn = false;
       this.showFloatingText(360, 200, 'БОСС ОГЛУШЕН', '#ffff00');
@@ -419,7 +412,6 @@ export default class BossBattleScene extends Phaser.Scene {
       return;
     }
 
-    // Применяем дебаффы (яд и кровь) ПЕРЕД ходом босса
     let debuffDamage = 0;
     if (this.poisonTurns > 0) {
       debuffDamage += 20;
@@ -454,15 +446,15 @@ export default class BossBattleScene extends Phaser.Scene {
     const bossWeaponId = Phaser.Utils.Array.GetRandom(this.bossData.weapons);
     const bossWeapon = WEAPONS[bossWeaponId];
 
-    this.shootProjectile(this.bossSprite.x, this.bossSprite.y, 360, 420, 0xff3333);
+    this.shootProjectile(this.bossSprite.x, this.bossSprite.y, 360, 980, 0xff3333);
     
     if (bossWeapon.stun) {
       this.playerStunned = true;
-      this.showFloatingText(360, 420, 'ВЫ ЗАМОРОЖЕНЫ!', '#33ccff');
+      this.showFloatingText(360, 980, 'ВЫ ЗАМОРОЖЕНЫ!', '#33ccff');
     }
 
     this.team[this.activeCharIndex].hp = Math.max(0, this.team[this.activeCharIndex].hp - bossWeapon.damage);
-    this.showFloatingText(360, 420, `-${bossWeapon.damage}`, '#ff3333');
+    this.showFloatingText(360, 980, `-${bossWeapon.damage}`, '#ff3333');
 
     this.time.delayedCall(400, () => {
       this.renderTeamUI();
@@ -496,12 +488,12 @@ export default class BossBattleScene extends Phaser.Scene {
 
   updateBossHpUI() {
     const percent = Math.max(0, this.bossHp / this.bossData.maxHp);
-    this.bossHpBar.width = 500 * percent;
+    this.bossHpBar.width = 600 * percent; // Ширина обновлена под 600
     this.bossHpText.setText(`${this.bossHp}/${this.bossData.maxHp}`);
 
     if (this.bossArmorBar) {
       const armorPercent = Math.max(0, this.bossArmor / this.bossData.armor);
-      this.bossArmorBar.width = 500 * armorPercent;
+      this.bossArmorBar.width = 400 * armorPercent; // Ширина обновлена под 400
       this.bossArmorText.setText(`Броня: ${this.bossArmor}`);
     }
   }
@@ -517,8 +509,8 @@ export default class BossBattleScene extends Phaser.Scene {
 
     this.medkitText.setText(`💊 x${Save.getMedkits()}`);
     this.renderTeamUI();
-    this.shootProjectile(690, 520, 360, 420, 0x33ff66);
-    this.showFloatingText(360, 420, `+100`, '#33ff66');
+    this.shootProjectile(30, 1180, 360, 980, 0x33ff66);
+    this.showFloatingText(360, 980, `+100`, '#33ff66');
   }
 
   winGame() {
