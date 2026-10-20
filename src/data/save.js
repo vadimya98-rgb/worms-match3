@@ -3,12 +3,8 @@ const SAVE_KEY = 'match_wormiks_save_v1';
 const defaultState = () => ({
   version: 1,
   player: {
-    fuzz: 0,
-    medkits: 0,
-    antitoxins: 0, // ДОБАВЛЕНО
-    characters: {},
-    lastDailyBonusDay: null,
-    dailyStreak: 0,
+    fuzz: 0, medkits: 0, antitoxins: 0,
+    characters: {}, lastDailyBonusDay: null, dailyStreak: 0,
   },
   bosses: {},
 });
@@ -19,16 +15,11 @@ export const Save = {
     try {
       const raw = localStorage.getItem(SAVE_KEY);
       this.data = raw ? JSON.parse(raw) : defaultState();
-      // Защита для старых сохранений
       if (this.data.player.antitoxins === undefined) this.data.player.antitoxins = 0;
-    } catch (e) {
-      this.data = defaultState();
-    }
+    } catch (e) { this.data = defaultState(); }
     return this.data;
   },
-  flush() {
-    try { localStorage.setItem(SAVE_KEY, JSON.stringify(this.data)); } catch (e) {}
-  },
+  flush() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(this.data)); } catch (e) {} },
   reset() { this.data = defaultState(); this.flush(); },
 
   getFuzz() { return this.data.player.fuzz; },
@@ -41,12 +32,21 @@ export const Save = {
   getAntitoxins() { return this.data.player.antitoxins; },
   addAntitoxins(n) { this.data.player.antitoxins += n; this.flush(); },
 
-  getCharacter(id) { return this.data.player.characters[id] || { owned: false, level: 0 }; },
-  ownCharacter(id) { this.data.player.characters[id] = { owned: true, level: 1 }; this.flush(); },
+  getCharacter(id) { 
+      const c = this.data.player.characters[id];
+      if (!c) return { owned: false, level: 0, armorLevel: 0 };
+      return { owned: c.owned, level: c.level, armorLevel: c.armorLevel || 0 };
+  },
+  ownCharacter(id) { this.data.player.characters[id] = { owned: true, level: 1, armorLevel: 0 }; this.flush(); },
   upgradeCharacter(id) {
     const c = this.data.player.characters[id];
     if (!c || !c.owned) return false;
     c.level += 1; this.flush(); return true;
+  },
+  upgradeArmor(id) {
+    const c = this.data.player.characters[id];
+    if (!c || !c.owned) return false;
+    c.armorLevel = (c.armorLevel || 0) + 1; this.flush(); return true;
   },
   isDragonOwned() { return this.getCharacter('dragon').owned; },
 };
