@@ -72,9 +72,10 @@ export default class ShopScene extends Phaser.Scene {
       this.container.add(this.add.text(150, y + 20, state.owned ? `${char.name} (Ур. ${state.level})` : char.name, { fontSize: '24px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }));
       
       if (state.owned) {
-        this.container.add(this.add.text(150, y + 65, `HP: ${getCharacterMaxHp(char.id, state.level)}`, { fontSize: '16px', color: '#2ecc71', fontStyle: 'bold' }));
+        // ЯРКИЙ ТЕКСТ
+        this.container.add(this.add.text(150, y + 65, `HP: ${getCharacterMaxHp(char.id, state.level)}`, { fontSize: '18px', color: '#2ecc71', fontStyle: 'bold', stroke: '#000', strokeThickness: 4 }));
         let armorVal = getCharacterMaxArmor(char.id, state.armorLevel);
-        this.container.add(this.add.text(150, y + 90, `Броня: ${armorVal}`, { fontSize: '16px', color: '#3498db', fontStyle: 'bold' }));
+        this.container.add(this.add.text(150, y + 95, `Броня: ${armorVal}`, { fontSize: '18px', color: '#3498db', fontStyle: 'bold', stroke: '#000', strokeThickness: 4 }));
       } else {
         this.container.add(this.add.text(150, y + 65, char.description, { fontSize: '14px', color: '#ccc', wordWrap: { width: 300 } }));
       }
@@ -89,14 +90,13 @@ export default class ShopScene extends Phaser.Scene {
               if (hpCost !== Infinity && Save.spendFuzz(hpCost)) { Save.upgradeCharacter(char.id); this.updateFuzzUI(); this.refreshContent(); }
           });
 
-          // Кнопка Брони
+          // КНОПКА БРОНИ (ПОЯВЛЯЕТСЯ ТОЛЬКО У КУПЛЕННЫХ)
           if (isArmorUnlocked) {
               const armorCost = getArmorUpgradeCost(char.id, state.armorLevel);
               this.createCharButton(600, y + 115, armorCost === Infinity ? 'БРОНЯ MAX' : 'УЛУЧШИТЬ БР.', armorCost, armorCost !== Infinity && Save.getFuzz() >= armorCost, () => {
                   if (armorCost !== Infinity && Save.spendFuzz(armorCost)) { Save.upgradeArmor(char.id); this.updateFuzzUI(); this.refreshContent(); }
               }, 0x3498db);
           } else {
-              // Заблокированная кнопка
               const btn = this.add.container(600, y + 115);
               const bBg = this.add.graphics().fillStyle(0x333333, 1).fillRoundedRect(-80, -20, 160, 45, 12);
               const bMain = this.add.graphics().fillStyle(0x555555, 1).fillRoundedRect(-80, -25, 160, 45, 12);
@@ -132,7 +132,6 @@ export default class ShopScene extends Phaser.Scene {
 
   renderBoosts() {
     let y = 220;
-    // АПТЕЧКА
     this.container.add(this.add.graphics().fillStyle(0xffffff, 0.1).fillRoundedRect(40, y, 640, 130, 20).lineStyle(2, 0xffffff, 0.3).strokeRoundedRect(40, y, 640, 130, 20));
     this.container.add(this.add.image(70, y + 40, 'icon_medkit').setDisplaySize(40, 40));
     this.container.add(this.add.text(110, y + 30, 'Аптечка', { fontSize: '26px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }));
@@ -142,7 +141,6 @@ export default class ShopScene extends Phaser.Scene {
     });
     y += 150;
 
-    // АНТИТОКСИН
     let antiCount = Save.getAntitoxins ? Save.getAntitoxins() : 0;
     this.container.add(this.add.graphics().fillStyle(0xffffff, 0.1).fillRoundedRect(40, y, 640, 130, 20).lineStyle(2, 0xffffff, 0.3).strokeRoundedRect(40, y, 640, 130, 20));
     this.container.add(this.add.image(70, y + 40, 'icon_antitoksin').setDisplaySize(40, 40));
