@@ -19,7 +19,6 @@ export default class FarmScene extends Phaser.Scene {
     this.createBoard();
     this.setupInput();
 
-    // 3D Кнопка ЗАВЕРШИТЬ
     this.createCandyButton(360, 1180, 300, 70, 'ЗАВЕРШИТЬ', 0x3498db, () => {
       if (!this.isBusy && !this.isGameOver) this.endGame();
     });
@@ -189,8 +188,11 @@ export default class FarmScene extends Phaser.Scene {
     btn.add([bg, this.add.text(0, 0, 'ЗАБРАТЬ', { fontSize: '36px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 5 }).setOrigin(0.5)]);
     btn.setSize(300, 80).setInteractive();
     
-    // ИСПРАВЛЕНИЕ: Теперь перекидывает на главный экран
-    btn.on('pointerdown', () => this.scene.start('HubScene')); 
+    // ИСПРАВЛЕНО: Переход на главный экран
+    btn.on('pointerdown', () => { 
+        console.log("Переход в HubScene"); // Для отладки
+        this.scene.start('HubScene'); 
+    });
   }
 
   createCandyButton(x, y, width, height, text, color, onClick) {
