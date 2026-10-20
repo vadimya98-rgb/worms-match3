@@ -22,20 +22,16 @@ export default class HubScene extends Phaser.Scene {
     this.createCandyButton(cx, 750, 360, 80, 'МАГАЗИН', 0x9b59b6, '🛒', () => this.scene.start('ShopScene'));
     this.createCandyButton(cx, 860, 360, 80, 'БОНУС', 0xf1c40f, '🎁', () => this.scene.start('DailyBonusScene'));
 
-    const reset = this.add.text(20, 1230, 'RESET', { fontSize: '16px', color: '#ffffff', backgroundColor: '#00000088', padding: {x:10, y:5} });
-    reset.setInteractive();
-    reset.on('pointerdown', () => { Save.reset(); this.scene.restart(); });
+    // RESET УДАЛЕН
   }
 
   createTopPanel() {
     const x = 440, w = 260, h = 60;
     
-    // Фузы
     this.add.graphics().fillStyle(0xffffff, 0.15).fillRoundedRect(x, 20, w, h, 20).lineStyle(3, 0xffffff, 0.5).strokeRoundedRect(x, 20, w, h, 20);
     this.add.image(x + 40, 50, 'icon_fuz').setDisplaySize(35, 35);
     this.add.text(x + 80, 50, `${Save.getFuzz()}`, { fontSize: '28px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 4 }).setOrigin(0, 0.5);
 
-    // Аптечки
     this.add.graphics().fillStyle(0xffffff, 0.15).fillRoundedRect(x, 90, w, h, 20).lineStyle(3, 0xffffff, 0.5).strokeRoundedRect(x, 90, w, h, 20);
     this.add.image(x + 40, 120, 'icon_medkit').setDisplaySize(35, 35);
     this.add.text(x + 80, 120, `${Save.getMedkits()}`, { fontSize: '28px', color: '#e74c3c', fontStyle: 'bold', stroke: '#000', strokeThickness: 4 }).setOrigin(0, 0.5);
