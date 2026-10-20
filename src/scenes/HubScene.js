@@ -23,7 +23,9 @@ export default class HubScene extends Phaser.Scene {
     this.makeButton(cx, 480, 'ФАРМ', '#22aa44', () => this.scene.start('FarmScene'));
     
     // Остальные кнопки пока ведут на заглушку
-    this.makeButton(cx, 640, 'БОССЫ', '#cc3333', () => this.openStub('Боссы'));
+    // Было: this.makeButton(cx, 640, 'БОССЫ', '#cc3333', () => this.openStub('Боссы'));
+// Стало:
+this.makeButton(cx, 640, 'БОССЫ', '#cc3333', () => this.scene.start('BossListScene'));
     // Было: this.makeButton(cx, 860, 'МАГАЗИН', '#aa66ff', () => this.openStub('Магазин'));
 // Стало:
 this.makeButton(cx, 860, 'МАГАЗИН', '#aa66ff', () => this.scene.start('ShopScene'));
