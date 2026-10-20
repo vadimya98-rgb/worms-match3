@@ -7,41 +7,32 @@ export default class StarterWormScene extends Phaser.Scene {
   }
 
   create() {
+    this.add.image(360, 640, 'bg').setDisplaySize(720, 1280);
+
     const cx = this.scale.width / 2;
     const dragon = getCharacterData('dragon');
 
-    // Заголовок
     this.add.text(cx, 140, 'Твой первый червь', {
-      fontSize: '38px',
-      color: '#ffffff',
+      fontSize: '38px', color: '#ffffff', stroke: '#000000', strokeThickness: 4
     }).setOrigin(0.5);
 
-    // Карточка с рамкой
-    this.add.rectangle(cx, 580, 520, 520, 0x222244)
+    this.add.rectangle(cx, 580, 520, 520, 0x222244, 0.8)
       .setStrokeStyle(4, 0x6666aa);
 
-    // Заглушка вместо спрайта — круг. Потом заменим на PNG дракона.
-    this.add.circle(cx, 540, 140, 0xff6633);
+    const dragonImg = this.add.image(cx, 540, 'dragon');
+    dragonImg.setDisplaySize(200, 200);
 
-    // Имя
     this.add.text(cx, 720, dragon.name, {
-      fontSize: '56px',
-      color: '#ffcc66',
-      fontStyle: 'bold',
+      fontSize: '56px', color: '#ffcc66', fontStyle: 'bold', stroke: '#000000', strokeThickness: 5
     }).setOrigin(0.5);
 
-    // HP
     this.add.text(cx, 790, `HP: ${dragon.baseHp}`, {
-      fontSize: '32px',
-      color: '#ffffff',
+      fontSize: '32px', color: '#ffffff', stroke: '#000000', strokeThickness: 4
     }).setOrigin(0.5);
 
-    // Кнопка "Забрать"
     const btn = this.add.text(cx, 1080, 'ЗАБРАТЬ', {
-      fontSize: '48px',
-      color: '#ffffff',
-      backgroundColor: '#22aa44',
-      padding: { x: 80, y: 30 },
+      fontSize: '48px', color: '#ffffff', backgroundColor: '#22aa44', padding: { x: 80, y: 30 },
+      stroke: '#000000', strokeThickness: 4
     }).setOrigin(0.5);
 
     btn.setInteractive();
