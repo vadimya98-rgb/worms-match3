@@ -15,31 +15,30 @@ export default class BossDetailScene extends Phaser.Scene {
     this.add.image(360, 640, 'bg').setDisplaySize(720, 1280);
     this.add.rectangle(360, 640, 720, 1280, 0x1e3799, 0.7);
 
-    // Кнопка Назад
-    this.createCandyButton(100, 50, 140, 50, '←', 0x3498db, '', () => this.scene.start('BossListScene'));
+    this.createCandyButton(100, 50, 140, 50, '←', 0x3498db, () => this.scene.start('BossListScene'));
 
     this.add.image(360, 180, 'boss' + this.bossIndex).setDisplaySize(180, 180);
     this.add.text(360, 300, this.boss.name, { fontSize: '48px', color: '#e74c3c', fontStyle: 'bold', stroke: '#000', strokeThickness: 8 }).setOrigin(0.5);
 
-    // Описание (Стеклянная панель)
-    this.add.graphics().fillStyle(0xffffff, 0.15).fillRoundedRect(160, 350, 400, 90, 20).lineStyle(3, 0xffffff, 0.5).strokeRoundedRect(160, 350, 400, 90, 20);
+    const descBg = this.add.graphics().fillStyle(0x2c3e50, 0.9).fillRoundedRect(160, 350, 400, 90, 20).lineStyle(4, 0x00ff9d, 1).strokeRoundedRect(160, 350, 400, 90, 20);
     this.add.text(360, 395, this.boss.description, { fontSize: '20px', color: '#fff', align: 'center', wordWrap: { width: 360 } }).setOrigin(0.5);
 
     this.add.text(360, 480, 'ВЫБЕРИТЕ БОЙЦОВ', { fontSize: '26px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 5 }).setOrigin(0.5);
 
-    // Слоты
     this.slotContainers = [];
     this.createSlot(250, 600, 0);
     this.createSlot(470, 600, 1);
 
-    // Кнопка В БОЙ
-    this.createCandyButton(360, 1100, 300, 80, 'В БОЙ', 0x2ecc71, '', () => {
+    this.createCandyButton(360, 1100, 300, 80, 'В БОЙ', 0x00ff9d, () => {
+      // ФИЛЬТРУЕМ NULL, ЧТОБЫ НЕ БЫЛО ЗАВИСАНИЙ
       const team = this.selectedChars.filter(id => id !== null);
-      if (team.length >= 1) this.scene.start('BossBattleScene', { bossIndex: this.bossIndex, team: team });
+      if (team.length >= 1) {
+        this.scene.start('BossBattleScene', { bossIndex: this.bossIndex, team: team });
+      }
     });
   }
 
-  createCandyButton(x, y, width, height, text, color, icon, onClick) {
+  createCandyButton(x, y, width, height, text, color, onClick) {
     const container = this.add.container(x, y);
     const shadow = this.add.graphics().fillStyle(Phaser.Display.Color.IntegerToColor(color).darken(30).color, 1).fillRoundedRect(-width/2, -height/2 + 10, width, height, 25);
     const bg = this.add.graphics().fillStyle(color, 1).fillRoundedRect(-width/2, -height/2, width, height, 25);
@@ -63,7 +62,6 @@ export default class BossDetailScene extends Phaser.Scene {
     const plus = this.add.text(0, 0, '+', { fontSize: '60px', color: '#7f8c8d', fontStyle: 'bold' }).setOrigin(0.5);
     container.add(plus);
 
-    // Делаем зону клика ровно по кругу
     const zone = this.add.zone(0, 0, 150, 150).setInteractive({ useHandCursor: true });
     container.add(zone);
 
@@ -84,17 +82,17 @@ export default class BossDetailScene extends Phaser.Scene {
       if (!state.owned) return;
 
       const isAlreadySelected = this.selectedChars.includes(char.id);
-      const btnColor = isAlreadySelected ? 0x1a252f : 0x34495e;
+      const btnColor = isAlreadySelected ? 0x333333 : 0x2c3e50;
 
       const btnBg = this.add.graphics().setDepth(102)
         .fillStyle(btnColor, 1).fillRoundedRect(120, y, 480, 110, 20)
-        .lineStyle(3, isAlreadySelected ? 0x555555 : 0x2ecc71, 1).strokeRoundedRect(120, y, 480, 110, 20);
+        .lineStyle(3, isAlreadySelected ? 0x555555 : 0x00ff9d, 1).strokeRoundedRect(120, y, 480, 110, 20);
       
       const avatarBg = this.add.circle(180, y + 55, 40, 0x000000).setDepth(102);
       const avatarImg = this.add.image(180, y + 55, char.id).setDisplaySize(70, 70).setDepth(103);
 
       const charName = this.add.text(250, y + 30, char.name, { fontSize: '26px', color: isAlreadySelected ? '#777' : '#fff', fontStyle: 'bold' }).setDepth(102);
-      const charHp = this.add.text(250, y + 70, `HP: ${getCharacterMaxHp(char.id, state.level)}`, { fontSize: '20px', color: isAlreadySelected ? '#555' : '#2ecc71' }).setDepth(102);
+      const charHp = this.add.text(250, y + 70, `HP: ${getCharacterMaxHp(char.id, state.level)}`, { fontSize: '20px', color: isAlreadySelected ? '#555' : '#00ff9d' }).setDepth(102);
 
       elements.push(btnBg, avatarBg, avatarImg, charName, charHp);
 
@@ -104,9 +102,8 @@ export default class BossDetailScene extends Phaser.Scene {
           this.selectedChars[slotIndex] = char.id;
           
           plusIcon.setVisible(false);
-          slotBg.setStrokeStyle(6, 0x2ecc71); // Зеленая обводка
+          slotBg.setStrokeStyle(6, 0x2ecc71); 
 
-          // Картинка четко вписывается в круг
           const img = this.add.image(0, 0, char.id).setDisplaySize(110, 110);
           slotContainer.add(img);
           
