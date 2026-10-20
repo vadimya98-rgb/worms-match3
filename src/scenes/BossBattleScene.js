@@ -261,10 +261,21 @@ export default class BossBattleScene extends Phaser.Scene {
     this.time.delayedCall(3500, () => this.applyGravity());
   }
 
-  showTurnBanner(text, color) {
+  // ИСПРАВЛЕНА ОШИБКА С ЦВЕТОМ
+  showTurnBanner(text, colorStr) {
     this.isBusy = true;
-    const bannerBg = this.add.graphics().fillStyle(0x000000, 0.8).fillRoundedRect(160, 600, 400, 100, 30).lineStyle(4, color, 1).strokeRoundedRect(160, 600, 400, 100, 30).setDepth(200);
-    const txt = this.add.text(360, 650, text, { fontSize: '40px', color: color, fontStyle: 'bold', stroke: '#000', strokeThickness: 5 }).setOrigin(0.5).setDepth(201);
+    
+    // Конвертируем строку цвета в число для графики
+    let colorNum = Phaser.Display.Color.HexStringToColor(colorStr).color;
+
+    const bannerBg = this.add.graphics();
+    bannerBg.fillStyle(0x000000, 0.8);
+    bannerBg.fillRoundedRect(160, 600, 400, 100, 30);
+    bannerBg.lineStyle(4, colorNum, 1);
+    bannerBg.strokeRoundedRect(160, 600, 400, 100, 30);
+    bannerBg.setDepth(200);
+
+    const txt = this.add.text(360, 650, text, { fontSize: '40px', color: colorStr, fontStyle: 'bold', stroke: '#000', strokeThickness: 5 }).setOrigin(0.5).setDepth(201);
     
     bannerBg.setScale(0); txt.setScale(0);
     this.tweens.add({ targets: [bannerBg, txt], scale: 1, duration: 400, ease: 'Back.easeOut' });
