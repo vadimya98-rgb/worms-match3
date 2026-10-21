@@ -1,4 +1,5 @@
 import { Save } from '../data/save.js';
+import { Effects } from '../utils/effects.js';
 
 export default class HubScene extends Phaser.Scene {
   constructor() { super({ key: 'HubScene' }); }
@@ -14,8 +15,7 @@ export default class HubScene extends Phaser.Scene {
 
     this.add.graphics().fillStyle(0xffffff, 0.1).fillRoundedRect(140, 390, 440, 260, 30).lineStyle(3, 0xffffff, 0.3).strokeRoundedRect(140, 390, 440, 260, 30);
     
-    // ИЗМЕНЕНО НА БЕСКОНЕЧНЫЙ
-    this.createCandyButton(cx, 470, 360, 80, 'БЕСКОНЕЧНЫЙ', 0x2ecc71, '♾️', () => this.scene.start('FarmScene'));
+    this.createCandyButton(cx, 470, 360, 80, 'БЕСКОНЕЧНЫЙ', 0x2ecc71, '∞', () => this.scene.start('FarmScene'));
     this.createCandyButton(cx, 580, 360, 80, 'БОССЫ', 0xe74c3c, '👹', () => this.scene.start('BossListScene'));
 
     this.add.graphics().fillStyle(0xffffff, 0.5).fillRect(200, 710, 320, 2);
@@ -46,15 +46,13 @@ export default class HubScene extends Phaser.Scene {
     const shadow = this.add.graphics().fillStyle(Phaser.Display.Color.IntegerToColor(color).darken(30).color, 1).fillRoundedRect(-width/2, -height/2 + 10, width, height, 25);
     const bg = this.add.graphics().fillStyle(color, 1).fillRoundedRect(-width/2, -height/2, width, height, 25);
     const highlight = this.add.graphics().fillStyle(0xffffff, 0.3).fillRoundedRect(-width/2 + 5, -height/2 + 5, width - 10, height / 2, 15);
-    
-    // Уменьшили шрифт для длинного слова
     const txt = this.add.text(15, 0, text, { fontSize: '28px', color: '#ffffff', fontStyle: 'bold', stroke: '#000000', strokeThickness: 6 }).setOrigin(0.5);
     const icn = this.add.text(-width/2 + 40, 0, icon, { fontSize: '28px' }).setOrigin(0.5);
 
     container.add([shadow, bg, highlight, txt, icn]);
     container.setSize(width, height).setInteractive({ useHandCursor: true });
     container.on('pointerdown', () => { container.y += 5; });
-    container.on('pointerup', () => { container.y -= 5; onClick(); });
+    container.on('pointerup', () => { container.y -= 5; Effects.click(this); onClick(); });
     container.on('pointerout', () => { container.y = y; });
   }
 }
