@@ -1,5 +1,6 @@
 import { Save } from '../data/save.js';
 import { BOSSES } from '../data/bosses.js';
+import { Effects } from '../utils/effects.js';
 
 export default class BossListScene extends Phaser.Scene {
   constructor() { super({ key: 'BossListScene' }); }
@@ -26,6 +27,7 @@ export default class BossListScene extends Phaser.Scene {
 
     this.renderBossMap();
     this.setupScroll();
+    this.setupClick();
   }
 
   createCandyButton(x, y, width, height, text, color, onClick) {
@@ -37,7 +39,7 @@ export default class BossListScene extends Phaser.Scene {
     container.add([shadow, bg, highlight, txt]);
     container.setSize(width, height).setInteractive({ useHandCursor: true });
     container.on('pointerdown', () => { container.y += 4; });
-    container.on('pointerup', () => { container.y -= 4; onClick(); });
+    container.on('pointerup', () => { container.y -= 4; Effects.click(this); onClick(); });
     container.on('pointerout', () => { container.y = y; });
   }
 
@@ -81,17 +83,6 @@ export default class BossListScene extends Phaser.Scene {
       }
 
       this.mapContainer.add([shadow, g, innerGlow, bossImg, nameText]);
-
-      const zone = this.add.zone(x, y, 150, 150).setInteractive();
-      
-      // ИСПРАВЛЕНИЕ: Слушаем отпускание пальца, чтобы свайп не срабатывал как клик
-      zone.on('pointerup', () => {
-        if (!this.moved && status !== 'locked') {
-          this.scene.start('BossDetailScene', { bossIndex: index });
-        }
-      });
-      
-      this.mapContainer.add(zone);
     });
   }
 
@@ -105,6 +96,7 @@ export default class BossListScene extends Phaser.Scene {
 
   setupScroll() {
     this.input.on('pointerdown', (p) => {
+      if (p.y < 100) return;
       this.startY = p.y;
       this.startMapY = this.mapContainer.y;
       this.isDragging = true;
@@ -114,7 +106,6 @@ export default class BossListScene extends Phaser.Scene {
     this.input.on('pointermove', (p) => {
       if (this.isDragging) {
         let diff = p.y - this.startY;
-        // Если палец сдвинулся больше чем на 10 пикселей, это свайп
         if (Math.abs(diff) > 10) this.moved = true;
         
         if (this.moved) {
@@ -129,8 +120,34 @@ export default class BossListScene extends Phaser.Scene {
       }
     });
 
-    this.input.on('pointerup', () => {
-      this.isDragging = false;
+    this.input.on('pointerup', () => { this.isDragging = false; });
+  }
+
+  setupClick() {
+    this.input.on('pointerup', (p) => {
+      if (this.moved || p.y < 100) return;
+      let localY = p.y - this.mapContainer.y;
+
+      BOSSES.forEach((boss, index) => {
+        let x = 360;
+        if (index % 4 === 0) x = 200; 
+        if (index % 4 === 1) x = 520; 
+        if (index % 4 === 2) x = 360; 
+        if (index % 4 === 3) x = 200; 
+
+        let y = 200 + index * 220;
+        let dist = Phaser.Math.Distance.Between(p.x, localY, x, y);
+        
+        if (dist < 75) {
+          const status = this.getBossStatus(index);
+          if (status !== 'locked') {
+            Effects.click(this);
+            this.time.delayedCall(100, () => this.scene.start('BossDetailScene', { bossIndex: index }));
+          } else {
+            Effects.error(this);
+          }
+        }
+      });
     });
   }
 }
