@@ -8,16 +8,11 @@ html, body {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  
-  /* Заливаем весь экран твоим фоновым изображением */
-  background: url('assets/bg.jpg') no-repeat center center;
-  background-size: cover; /* Растягивает картинку на весь экран, обрезая лишнее по краям */
-  background-color: #1a1a2e; /* Запасной цвет, если картинка не прогрузится */
-  
+  background-color: #1a1a2e;
   -webkit-user-select: none;
   user-select: none;
   -webkit-touch-callout: none;
-  touch-action: none; 
+  touch-action: none;
 }
 
 #game {
