@@ -5,6 +5,11 @@ export default class BossListScene extends Phaser.Scene {
   constructor() { super({ key: 'BossListScene' }); }
 
   create() {
+    this.isDragging = false;
+    this.moved = false;
+    this.startY = 0;
+    this.startMapY = 0;
+
     this.add.image(360, 640, 'bg').setDisplaySize(720, 1280);
     this.add.rectangle(360, 640, 720, 1280, 0x1e3799, 0.6);
 
@@ -12,10 +17,8 @@ export default class BossListScene extends Phaser.Scene {
 
     this.createCandyButton(100, 50, 140, 50, '←', 0x3498db, () => this.scene.start('HubScene'));
 
-    // Создаем контейнер для карты
     this.mapContainer = this.add.container(0, 0);
     
-    // Маска, чтобы карта не вылезала за пределы экрана (под верхней панелью)
     const maskShape = this.make.graphics();
     maskShape.fillRect(0, 100, 720, 1180); 
     const mask = maskShape.createGeometryMask();
@@ -65,7 +68,6 @@ export default class BossListScene extends Phaser.Scene {
 
       const nameText = this.add.text(x, y + 105, boss.name, { fontSize: '24px', color: '#fff', stroke: '#000', strokeThickness: 5 }).setOrigin(0.5);
 
-      // Линии между боссами
       if (index > 0) {
         let prevX = 360;
         if ((index - 1) % 4 === 0) prevX = 200;
@@ -78,13 +80,17 @@ export default class BossListScene extends Phaser.Scene {
         this.mapContainer.add(line);
       }
 
-      // Добавляем элементы в контейнер
       this.mapContainer.add([shadow, g, innerGlow, bossImg, nameText]);
 
       const zone = this.add.zone(x, y, 150, 150).setInteractive();
-      zone.on('pointerdown', () => {
-        if (status !== 'locked') this.scene.start('BossDetailScene', { bossIndex: index });
+      
+      // ИСПРАВЛЕНИЕ: Слушаем отпускание пальца, чтобы свайп не срабатывал как клик
+      zone.on('pointerup', () => {
+        if (!this.moved && status !== 'locked') {
+          this.scene.start('BossDetailScene', { bossIndex: index });
+        }
       });
+      
       this.mapContainer.add(zone);
     });
   }
@@ -97,30 +103,25 @@ export default class BossListScene extends Phaser.Scene {
     return 'locked';
   }
 
-  // ЛОГИКА СВАЙПА (СКРОЛЛА)
   setupScroll() {
-    let startY = 0;
-    let startMapY = 0;
-    let isDragging = false;
-    let threshold = 10;
-    let moved = false;
-
     this.input.on('pointerdown', (p) => {
-      startY = p.y;
-      startMapY = this.mapContainer.y;
-      isDragging = true;
-      moved = false;
+      this.startY = p.y;
+      this.startMapY = this.mapContainer.y;
+      this.isDragging = true;
+      this.moved = false;
     });
 
     this.input.on('pointermove', (p) => {
-      if (isDragging) {
-        let diff = p.y - startY;
-        if (Math.abs(diff) > threshold) moved = true;
+      if (this.isDragging) {
+        let diff = p.y - this.startY;
+        // Если палец сдвинулся больше чем на 10 пикселей, это свайп
+        if (Math.abs(diff) > 10) this.moved = true;
         
-        if (moved) {
-          // Ограничиваем прокрутку, чтобы карта не улетела в бесконечность
-          let newY = startMapY + diff;
-          let minScroll = -(this.mapContainer.height - 1200); // Высота экрана минус отступы
+        if (this.moved) {
+          let newY = this.startMapY + diff;
+          const totalMapHeight = 200 + (BOSSES.length * 220);
+          let minScroll = -(totalMapHeight - 1200); 
+          
           if (newY > 0) newY = 0;
           if (newY < minScroll) newY = minScroll;
           this.mapContainer.y = newY;
@@ -129,7 +130,7 @@ export default class BossListScene extends Phaser.Scene {
     });
 
     this.input.on('pointerup', () => {
-      isDragging = false;
+      this.isDragging = false;
     });
   }
 }
