@@ -1,54 +1,25 @@
-name: Build Android APK
-
-# ЗДЕСЬ МЫ ВКЛЮЧАЕМ АВТОЗАПУСК
-on:
-  push:
-    branches: [ main ]    # Запускать при каждом коммите в main
-  workflow_dispatch:      # Оставить возможность запустить вручную
-
+name: Android APK
+on: push
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
-
-      - name: Setup Java
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Download Phaser
-        run: mkdir -p libs && curl -L -o libs/phaser.min.js https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js
-
-      - name: Prepare www folder
-        run: mkdir -p www && cp -r index.html style.css src assets libs www/ && sed -i 's|https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js|libs/phaser.min.js|' www/index.html
-
-      - name: Add Android platform
-        run: npx cap add android
-
-      - name: Generate Icons
-        run: npx @capacitor/assets generate --android
-
-      - name: Sync Capacitor
-        run: npx cap sync android
-
-      - name: Build APK
-        run: cd android && chmod +x gradlew && ./gradlew assembleDebug
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
+      - run: npm install
+      - run: mkdir -p libs && curl -L -o libs/phaser.min.js https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js
+      - run: mkdir -p www && cp -r index.html style.css src assets libs www/ && sed -i 's|https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js|libs/phaser.min.js|' www/index.html
+      - run: npx cap add android
+      - run: npx @capacitor/assets generate --android
+      - run: npx cap sync android
+      - run: cd android && chmod +x gradlew && ./gradlew assembleDebug
+      - uses: actions/upload-artifact@v4
         with:
           name: wormiks-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
-          retention-days: 30
