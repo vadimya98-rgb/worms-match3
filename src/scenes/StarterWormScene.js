@@ -6,29 +6,32 @@ export default class StarterWormScene extends Phaser.Scene {
   constructor() { super({ key: 'StarterWormScene' }); }
 
   create() {
-    this.add.image(360, 640, 'bg').setDisplaySize(720, 1280);
-    this.add.rectangle(360, 640, 720, 1280, 0x1e3799, 0.6);
+    const W = this.scale.width;
+    const H = this.scale.height;
+    const cx = W / 2;
 
-    const cx = 360;
+    this.add.image(cx, H/2, 'bg').setDisplaySize(W, H);
+    this.add.rectangle(cx, H/2, W, H, 0x1e3799, 0.6);
+
     const dragon = getCharacterData('dragon');
 
-    this.add.text(cx, 150, 'Поздравляю, это твой первый дракон,\nс которым ты начнешь это\nувлекательное приключение.', {
+    this.add.text(cx, H * 0.12, 'Поздравляю, это твой первый дракон,\nс которым ты начнешь это\nувлекательное приключение.', {
       fontSize: '24px', color: '#ffffff', fontStyle: 'bold', align: 'center', stroke: '#000', strokeThickness: 4
     }).setOrigin(0.5);
 
-    this.add.graphics().fillStyle(0xffffff, 0.15).fillRoundedRect(210, 300, 300, 300, 30)
-        .lineStyle(3, 0xffffff, 0.5).strokeRoundedRect(210, 300, 300, 300, 30);
+    this.add.graphics().fillStyle(0xffffff, 0.15).fillRoundedRect(cx - 150, H * 0.25, 300, 300, 30)
+        .lineStyle(3, 0xffffff, 0.5).strokeRoundedRect(cx - 150, H * 0.25, 300, 300, 30);
 
-    const shadow = this.add.ellipse(cx, 560, 120, 30, 0x000000, 0.6);
-    const dragonImg = this.add.image(cx, 450, 'dragon').setDisplaySize(140, 140);
+    const shadow = this.add.ellipse(cx, H * 0.25 + 260, 120, 30, 0x000000, 0.6);
+    const dragonImg = this.add.image(cx, H * 0.25 + 150, 'dragon').setDisplaySize(140, 140);
 
-    this.tweens.add({ targets: dragonImg, y: 430, duration: 1500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    this.tweens.add({ targets: dragonImg, y: H * 0.25 + 130, duration: 1500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     this.tweens.add({ targets: shadow, scaleX: 0.8, duration: 1500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
 
-    this.add.text(cx, 650, dragon.name, { fontSize: '48px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 6 }).setOrigin(0.5);
-    this.add.text(cx, 710, `HP: ${dragon.baseHp}`, { fontSize: '28px', color: '#fff', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5);
+    this.add.text(cx, H * 0.25 + 350, dragon.name, { fontSize: '48px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 6 }).setOrigin(0.5);
+    this.add.text(cx, H * 0.25 + 410, `HP: ${dragon.baseHp}`, { fontSize: '28px', color: '#fff', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5);
 
-    this.createCandyButton(cx, 950, 300, 80, 'ДАЛЕЕ', 0x2ecc71, () => {
+    this.createCandyButton(cx, H * 0.8, 300, 80, 'ДАЛЕЕ', 0x2ecc71, () => {
       Save.ownCharacter('dragon');
       this.scene.start('HubScene');
     });
