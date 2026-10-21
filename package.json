@@ -1,0 +1,15 @@
+{
+  "name": "wormiks",
+  "version": "1.0.0",
+  "description": "Worms Match-3",
+  "author": "adimya98-rgb",
+  "license": "MIT",
+  "dependencies": {
+    "@capacitor/android": "^6.1.2",
+    "@capacitor/cli": "^6.1.2",
+    "@capacitor/core": "^6.1.2"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.5"
+  }
+}
