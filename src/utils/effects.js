@@ -6,7 +6,12 @@ export const Effects = {
   },
 
   vibrate(ms) {
-    if (window.navigator && window.navigator.vibrate) {
+    // Проверяем, запущено ли приложение как APK (Capacitor)
+    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Haptics) {
+      window.Capacitor.Plugins.Haptics.vibrate();
+    } 
+    // Если это браузер, используем стандартный метод
+    else if (window.navigator && window.navigator.vibrate) {
       window.navigator.vibrate(ms);
     }
   },
@@ -21,7 +26,6 @@ export const Effects = {
     this.vibrate(10);
   },
 
-  // Звук выстрела убран, оставлена только вибрация при запуске снаряда
   shoot(scene) {
     this.vibrate(20);
   },
