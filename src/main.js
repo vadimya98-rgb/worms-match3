@@ -13,14 +13,14 @@ import AdminScene from './scenes/AdminScene.js';
 
 const config = {
   type: Phaser.AUTO,
-  // МЕНЯЕМ РАЗРЕШЕНИЕ НА ВЫТЯНУТОЕ (как экран телефона)
+  // ДЕЛАЕМ ХОЛСТ ВЫТЯНУТЫМ (720x1600), как экран телефона
   width: 720,
   height: 1600, 
   backgroundColor: '#1a1a2e',
   parent: 'game',
   
   scale: {
-    // ENVELOP заполняет экран, сохраняя пропорции (если пропорции совпадают, обрезки нет)
+    // ENVELOP заполнит экран без черных полос
     mode: Phaser.Scale.ENVELOP, 
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
