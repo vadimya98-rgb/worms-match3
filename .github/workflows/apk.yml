@@ -48,14 +48,10 @@ jobs:
       - name: Add Android Platform
         run: npx cap add android
 
-      - name: Generate App Icons and Splash
+      - name: Generate App Icons
         run: |
-          # Страховка: если иконка лежит в assets или в корне, копируем её в resources
-          mkdir -p resources
-          if [ -f "assets/icon.png" ]; then cp assets/icon.png resources/icon.png; fi
-          if [ -f "icon.png" ]; then cp icon.png resources/icon.png; fi
-          
-          # Запускаем генерацию иконок (берет из resources/icon.png)
+          echo "Проверка папки resources:"
+          ls -la resources/ || echo "Папка resources не найдена!"
           npx @capacitor/assets generate --android --iconBackgroundColor '#1a1a2e' --iconBackgroundColorDark '#1a1a2e'
 
       - name: Sync Capacitor
