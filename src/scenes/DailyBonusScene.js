@@ -5,15 +5,20 @@ export default class DailyBonusScene extends Phaser.Scene {
   constructor() { super({ key: 'DailyBonusScene' }); }
 
   create() {
-    this.add.image(360, 640, 'bg').setDisplaySize(720, 1280);
-    this.add.rectangle(360, 640, 720, 1280, 0x1e3799, 0.6);
+    const W = this.scale.width;
+    const H = this.scale.height;
+    const cx = W / 2;
+
+    this.add.image(cx, H/2, 'bg').setDisplaySize(W, H);
+    this.add.rectangle(cx, H/2, W, H, 0x1e3799, 0.6);
 
     this.todayDate = this.getMskDate(); this.lastClaimDate = Save.data.player.lastDailyBonusDay;
     this.streak = Save.data.player.dailyStreak;
     this.canClaim = (this.todayDate !== this.lastClaimDate);
     this.currentRewardDay = this.canClaim ? (this.lastClaimDate === null ? 1 : (this.streak % 7) + 1) : (this.streak === 0 ? 1 : this.streak);
     if (this.canClaim && this.lastClaimDate !== null && !this.isYesterday(this.lastClaimDate)) { this.currentRewardDay = 1; this.streak = 0; }
-    this.buildUI();
+    
+    this.buildUI(W, H);
   }
 
   getMskDate() {
@@ -25,10 +30,10 @@ export default class DailyBonusScene extends Phaser.Scene {
     return dateStr === `${m.getFullYear()}-${String(m.getMonth()+1).padStart(2,'0')}-${String(m.getDate()).padStart(2,'0')}`;
   }
 
-  buildUI() {
-    const cx = 360;
-    this.createCandyButton(100, 50, 140, 50, '←', 0x3498db, () => this.scene.start('HubScene'));
-    this.add.text(cx, 130, 'ЕЖЕДНЕВНЫЙ БОНУС', { fontSize: '36px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 6 }).setOrigin(0.5);
+  buildUI(W, H) {
+    const cx = W / 2;
+    this.createCandyButton(100, H * 0.05, 140, 50, '←', 0x3498db, () => this.scene.start('HubScene'));
+    this.add.text(cx, H * 0.1, 'ЕЖЕДНЕВНЫЙ БОНУС', { fontSize: '36px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 6 }).setOrigin(0.5);
 
     const rewards = [
       { type: 'fuzz', amount: 100, icon: 'icon_fuz', text: '100' }, 
@@ -40,7 +45,7 @@ export default class DailyBonusScene extends Phaser.Scene {
       { type: 'fuzz', amount: 1500, icon: 'icon_fuz', text: '1500' }
     ];
 
-    const startY = 240, spacingY = 130;
+    const startY = H * 0.18, spacingY = H * 0.1;
     for (let i = 0; i < 7; i++) {
       const day = i + 1; const isLast = (day === 7);
       let x, y, cardW, cardH;
@@ -67,7 +72,7 @@ export default class DailyBonusScene extends Phaser.Scene {
 
       if (day === this.currentRewardDay && this.canClaim) this.tweens.add({ targets: g, alpha: 0.8, duration: 800, yoyo: true, repeat: -1 });
     }
-    this.createCandyButton(cx, 1000, 320, 80, this.canClaim ? 'ЗАБРАТЬ' : 'ПОЛУЧЕНО', this.canClaim ? 0x2ecc71 : 0x7f8c8d, () => { if (this.canClaim) this.claimReward(rewards[this.currentRewardDay - 1]); });
+    this.createCandyButton(cx, H * 0.82, 320, 80, this.canClaim ? 'ЗАБРАТЬ' : 'ПОЛУЧЕНО', this.canClaim ? 0x2ecc71 : 0x7f8c8d, () => { if (this.canClaim) this.claimReward(rewards[this.currentRewardDay - 1]); });
   }
 
   claimReward(reward) {
