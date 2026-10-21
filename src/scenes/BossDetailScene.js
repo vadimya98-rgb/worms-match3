@@ -1,6 +1,7 @@
 import { Save } from '../data/save.js';
 import { BOSSES } from '../data/bosses.js';
 import { CHARACTERS, getCharacterMaxHp } from '../data/characters.js';
+import { Effects } from '../utils/effects.js';
 
 export default class BossDetailScene extends Phaser.Scene {
   constructor() { super({ key: 'BossDetailScene' }); }
@@ -9,7 +10,7 @@ export default class BossDetailScene extends Phaser.Scene {
     this.bossIndex = data.bossIndex;
     this.boss = BOSSES[this.bossIndex];
     this.selectedChars = [null, null]; 
-    this.menuOpen = false; // Флаг, открыто ли меню
+    this.menuOpen = false;
   }
 
   create() {
@@ -49,7 +50,7 @@ export default class BossDetailScene extends Phaser.Scene {
     container.add([shadow, bg, highlight, txt]);
     container.setSize(width, height).setInteractive({ useHandCursor: true });
     container.on('pointerdown', () => { container.y += 5; });
-    container.on('pointerup', () => { container.y -= 5; this.time.delayedCall(50, onClick); });
+    container.on('pointerup', () => { container.y -= 5; Effects.click(this); this.time.delayedCall(50, onClick); });
     container.on('pointerout', () => { container.y = y; });
     return container;
   }
@@ -69,6 +70,7 @@ export default class BossDetailScene extends Phaser.Scene {
   openCharSelect(slotIndex, slotContainer, slotBg, plusIcon) {
     if (this.menuOpen) return;
     this.menuOpen = true;
+    Effects.click(this);
 
     const overlay = this.add.rectangle(360, 640, 720, 1280, 0x000000, 0.9).setDepth(100).setInteractive();
     const panel = this.add.graphics().setDepth(101).fillStyle(0x2c3e50, 1).fillRoundedRect(80, 200, 560, 800, 30).lineStyle(4, 0x3498db, 1).strokeRoundedRect(80, 200, 560, 800, 30);
@@ -107,14 +109,12 @@ export default class BossDetailScene extends Phaser.Scene {
 
     const dragEnd = () => { isDragging = false; };
 
-    // Подключаем глобальные слушатели для скролла
     this.input.on('pointerdown', dragStart);
     this.input.on('pointermove', dragMove);
     this.input.on('pointerup', dragEnd);
 
     const closeMenu = () => {
         this.menuOpen = false;
-        // Отключаем слушатели, чтобы не мешали в других сценах
         this.input.off('pointerdown', dragStart);
         this.input.off('pointermove', dragMove);
         this.input.off('pointerup', dragEnd);
@@ -142,14 +142,13 @@ export default class BossDetailScene extends Phaser.Scene {
       listContainer.add([btnBg, avatarBg, avatarImg, charName, charHp]);
 
       const zone = this.add.zone(360, y + 55, 480, 110).setInteractive();
-      
-      // ЗАЩИТА ОТ СКВОЗНЫХ КЛИКОВ (ОТСЛЕЖИВАЕМ РАССТОЯНИЕ)
       let startX = 0, startY = 0;
       zone.on('pointerdown', (p) => { startX = p.x; startY = p.y; });
       zone.on('pointerup', (p) => {
         if (!this.menuOpen) return;
         let dist = Phaser.Math.Distance.Between(startX, startY, p.x, p.y);
-        if (dist < 15) { // Если палец сдвинулся меньше 15 пикселей, это клик
+        if (dist < 15) {
+            Effects.click(this);
             if (isAlreadySelected) {
                 this.selectedChars[slotIndex] = null;
                 plusIcon.setVisible(true);
@@ -171,7 +170,7 @@ export default class BossDetailScene extends Phaser.Scene {
     });
 
     const cancelBtn = this.add.text(360, 950, 'ОТМЕНА', { fontSize: '28px', color: '#e74c3c', fontStyle: 'bold', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5).setDepth(102).setInteractive();
-    cancelBtn.on('pointerup', () => { closeMenu(); });
+    cancelBtn.on('pointerup', () => { Effects.click(this); closeMenu(); });
     elements.push(cancelBtn);
   }
 }
