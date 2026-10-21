@@ -14,25 +14,29 @@ export default class BossDetailScene extends Phaser.Scene {
   }
 
   create() {
-    this.add.image(360, 640, 'bg').setDisplaySize(720, 1280);
-    this.add.rectangle(360, 640, 720, 1280, 0x1e3799, 0.7);
+    const W = this.scale.width;
+    const H = this.scale.height;
+    const cx = W / 2;
 
-    this.createCandyButton(100, 50, 140, 50, '←', 0x3498db, () => this.scene.start('BossListScene'));
+    this.add.image(cx, H/2, 'bg').setDisplaySize(W, H);
+    this.add.rectangle(cx, H/2, W, H, 0x1e3799, 0.7);
 
-    this.add.image(360, 180, 'boss' + this.bossIndex).setDisplaySize(180, 180);
-    this.add.text(360, 300, this.boss.name, { fontSize: '48px', color: '#e74c3c', fontStyle: 'bold', stroke: '#000', strokeThickness: 8 }).setOrigin(0.5);
+    this.createCandyButton(100, H * 0.05, 140, 50, '←', 0x3498db, () => this.scene.start('BossListScene'));
 
-    const descBg = this.add.graphics().fillStyle(0x2c3e50, 0.9).fillRoundedRect(160, 350, 400, 120, 20).lineStyle(4, 0x00ff9d, 1).strokeRoundedRect(160, 350, 400, 120, 20);
-    this.add.text(360, 385, this.boss.description, { fontSize: '18px', color: '#fff', align: 'center', wordWrap: { width: 360 } }).setOrigin(0.5);
-    this.add.text(360, 435, `Награда: ${this.boss.reward} Фузов`, { fontSize: '22px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5);
+    this.add.image(cx, H * 0.15, 'boss' + this.bossIndex).setDisplaySize(180, 180);
+    this.add.text(cx, H * 0.26, this.boss.name, { fontSize: '48px', color: '#e74c3c', fontStyle: 'bold', stroke: '#000', strokeThickness: 8 }).setOrigin(0.5);
 
-    this.add.text(360, 520, 'ВЫБЕРИТЕ БОЙЦОВ', { fontSize: '26px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 5 }).setOrigin(0.5);
+    const descBg = this.add.graphics().fillStyle(0x2c3e50, 0.9).fillRoundedRect(cx - 200, H * 0.3, 400, 120, 20).lineStyle(4, 0x00ff9d, 1).strokeRoundedRect(cx - 200, H * 0.3, 400, 120, 20);
+    this.add.text(cx, H * 0.33, this.boss.description, { fontSize: '18px', color: '#fff', align: 'center', wordWrap: { width: 360 } }).setOrigin(0.5);
+    this.add.text(cx, H * 0.37, `Награда: ${this.boss.reward} Фузов`, { fontSize: '22px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5);
+
+    this.add.text(cx, H * 0.44, 'ВЫБЕРИТЕ БОЙЦОВ', { fontSize: '26px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 5 }).setOrigin(0.5);
 
     this.slotContainers = [];
-    this.createSlot(250, 630, 0);
-    this.createSlot(470, 630, 1);
+    this.createSlot(cx - 110, H * 0.53, 0);
+    this.createSlot(cx + 110, H * 0.53, 1);
 
-    this.createCandyButton(360, 1100, 300, 80, 'В БОЙ', 0x00ff9d, () => {
+    this.createCandyButton(cx, H * 0.85, 300, 80, 'В БОЙ', 0x00ff9d, () => {
       const team = this.selectedChars.filter(id => id !== null);
       if (team.length > 0) {
         this.scene.start('BossBattleScene', { bossIndex: this.bossIndex, team: team });
@@ -72,13 +76,17 @@ export default class BossDetailScene extends Phaser.Scene {
     this.menuOpen = true;
     Effects.click(this);
 
-    const overlay = this.add.rectangle(360, 640, 720, 1280, 0x000000, 0.9).setDepth(100).setInteractive();
-    const panel = this.add.graphics().setDepth(101).fillStyle(0x2c3e50, 1).fillRoundedRect(80, 200, 560, 800, 30).lineStyle(4, 0x3498db, 1).strokeRoundedRect(80, 200, 560, 800, 30);
-    const title = this.add.text(360, 250, 'ВЫБЕРИТЕ БОЙЦА', { fontSize: '32px', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5).setDepth(102);
+    const W = this.scale.width;
+    const H = this.scale.height;
+    const cx = W / 2;
+
+    const overlay = this.add.rectangle(cx, H/2, W, H, 0x000000, 0.9).setDepth(100).setInteractive();
+    const panel = this.add.graphics().setDepth(101).fillStyle(0x2c3e50, 1).fillRoundedRect(cx - 280, H * 0.15, 560, 700, 30).lineStyle(4, 0x3498db, 1).strokeRoundedRect(cx - 280, H * 0.15, 560, 700, 30);
+    const title = this.add.text(cx, H * 0.18, 'ВЫБЕРИТЕ БОЙЦА', { fontSize: '32px', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5).setDepth(102);
 
     const listContainer = this.add.container(0, 0).setDepth(102);
     const maskShape = this.make.graphics();
-    maskShape.fillRect(80, 290, 560, 620);
+    maskShape.fillRect(cx - 280, H * 0.22, 560, 560);
     const mask = maskShape.createGeometryMask();
     listContainer.setMask(mask);
 
@@ -93,7 +101,7 @@ export default class BossDetailScene extends Phaser.Scene {
         if (Math.abs(p.y - dragStartY) > 10) isDragging = true;
         if (isDragging) {
             let newY = listStartY + (p.y - dragStartY);
-            let minScroll = -(CHARACTERS.length * 130 - 580);
+            let minScroll = -(CHARACTERS.length * 130 - 500);
             if (newY > 0) newY = 0;
             if (newY < minScroll) newY = minScroll;
             listContainer.y = newY;
@@ -121,7 +129,7 @@ export default class BossDetailScene extends Phaser.Scene {
         elements.forEach(el => el.destroy());
     };
 
-    let y = 320;
+    let y = H * 0.25;
 
     CHARACTERS.forEach(char => {
       const state = Save.getCharacter(char.id);
@@ -131,17 +139,17 @@ export default class BossDetailScene extends Phaser.Scene {
       const btnColor = isAlreadySelected ? 0x333333 : 0x2c3e50;
 
       const btnBg = this.add.graphics()
-        .fillStyle(btnColor, 1).fillRoundedRect(120, y, 480, 110, 20)
-        .lineStyle(3, isAlreadySelected ? 0x555555 : 0x00ff9d, 1).strokeRoundedRect(120, y, 480, 110, 20);
+        .fillStyle(btnColor, 1).fillRoundedRect(cx - 240, y, 480, 110, 20)
+        .lineStyle(3, isAlreadySelected ? 0x555555 : 0x00ff9d, 1).strokeRoundedRect(cx - 240, y, 480, 110, 20);
       
-      const avatarBg = this.add.circle(180, y + 55, 40, 0x000000);
-      const avatarImg = this.add.image(180, y + 55, char.id).setDisplaySize(70, 70);
-      const charName = this.add.text(250, y + 30, char.name, { fontSize: '26px', color: isAlreadySelected ? '#777' : '#fff', fontStyle: 'bold' });
-      const charHp = this.add.text(250, y + 70, `HP: ${getCharacterMaxHp(char.id, state.level)}`, { fontSize: '20px', color: isAlreadySelected ? '#555' : '#00ff9d' });
+      const avatarBg = this.add.circle(cx - 180, y + 55, 40, 0x000000);
+      const avatarImg = this.add.image(cx - 180, y + 55, char.id).setDisplaySize(70, 70);
+      const charName = this.add.text(cx - 110, y + 30, char.name, { fontSize: '26px', color: isAlreadySelected ? '#777' : '#fff', fontStyle: 'bold' });
+      const charHp = this.add.text(cx - 110, y + 70, `HP: ${getCharacterMaxHp(char.id, state.level)}`, { fontSize: '20px', color: isAlreadySelected ? '#555' : '#00ff9d' });
 
       listContainer.add([btnBg, avatarBg, avatarImg, charName, charHp]);
 
-      const zone = this.add.zone(360, y + 55, 480, 110).setInteractive();
+      const zone = this.add.zone(cx, y + 55, 480, 110).setInteractive();
       let startX = 0, startY = 0;
       zone.on('pointerdown', (p) => { startX = p.x; startY = p.y; });
       zone.on('pointerup', (p) => {
@@ -169,7 +177,7 @@ export default class BossDetailScene extends Phaser.Scene {
       y += 130;
     });
 
-    const cancelBtn = this.add.text(360, 950, 'ОТМЕНА', { fontSize: '28px', color: '#e74c3c', fontStyle: 'bold', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5).setDepth(102).setInteractive();
+    const cancelBtn = this.add.text(cx, H * 0.85, 'ОТМЕНА', { fontSize: '28px', color: '#e74c3c', fontStyle: 'bold', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5).setDepth(102).setInteractive();
     cancelBtn.on('pointerup', () => { Effects.click(this); closeMenu(); });
     elements.push(cancelBtn);
   }
