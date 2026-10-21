@@ -61,11 +61,18 @@ export default class BossDetailScene extends Phaser.Scene {
     container.add(plus);
     const zone = this.add.zone(0, 0, 150, 150).setInteractive({ useHandCursor: true });
     container.add(zone);
-    zone.on('pointerdown', () => this.openCharSelect(index, container, bg, plus));
+    
+    // ИСПОЛЬЗУЕМ POINTERUP, ЧТОБЫ ОКНО ОТКРЫВАЛОСЬ ПОСЛЕ ОТПУСКАНИЯ ПАЛЬЦА
+    zone.on('pointerup', () => this.openCharSelect(index, container, bg, plus));
+    
     this.slotContainers[index] = container;
   }
 
   openCharSelect(slotIndex, slotContainer, slotBg, plusIcon) {
+    // ЗАЩИТА ОТ СКВОЗНОГО КЛИКА (ЖДЕМ 200МС)
+    let canSelect = false;
+    this.time.delayedCall(200, () => { canSelect = true; });
+
     const overlay = this.add.rectangle(360, 640, 720, 1280, 0x000000, 0.9).setDepth(100).setInteractive();
     const panel = this.add.graphics().setDepth(101).fillStyle(0x2c3e50, 1).fillRoundedRect(80, 200, 560, 800, 30).lineStyle(4, 0x3498db, 1).strokeRoundedRect(80, 200, 560, 800, 30);
     const title = this.add.text(360, 250, 'ВЫБЕРИТЕ БОЙЦА', { fontSize: '32px', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5).setDepth(102);
@@ -98,7 +105,9 @@ export default class BossDetailScene extends Phaser.Scene {
       listContainer.add([btnBg, avatarBg, avatarImg, charName, charHp]);
 
       const zone = this.add.zone(360, y + 55, 480, 110).setInteractive();
-      zone.on('pointerup', () => { // ИСПОЛЬЗУЕМ UP, ЧТОБЫ НЕ КОНФЛИКТОВАТЬ СО СВАЙПОМ
+      zone.on('pointerup', () => { 
+        if (!canSelect) return; // ИГНОРИРУЕМ, ЕСЛИ ОКНО ТОЛЬКО ЧТО ОТКРЫЛОСЬ
+        
         if (isAlreadySelected) {
             this.selectedChars[slotIndex] = null;
             plusIcon.setVisible(true);
@@ -118,10 +127,9 @@ export default class BossDetailScene extends Phaser.Scene {
       y += 130;
     });
 
-    // СКРОЛЛ ПОВЕШЕН НА ПАНЕЛЬ, А НЕ НА НЕВИДИМУЮ ЗОНУ
     let startY = 0, startListY = 0, isDragging = false, moved = false;
     
-    panel.setInteractive(new Phaser.Geom.Rectangle(80, 200, 560, 800), Phaser.Geom.Rectangle.Contains); // Делаем панель кликабельной для скролла
+    panel.setInteractive(new Phaser.Geom.Rectangle(80, 200, 560, 800), Phaser.Geom.Rectangle.Contains);
 
     panel.on('pointerdown', (p) => {
         startY = p.y; startListY = listContainer.y; isDragging = true; moved = false;
