@@ -25,19 +25,14 @@ jobs:
 
       - name: Install Capacitor CLI and Core
         run: |
-          npm install @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7 @capacitor/assets
+          npm install @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7 @capacitor/assets @capacitor/haptics@7
 
       - name: Prepare Game Files
         run: |
           mkdir -p www
-          # Копируем файлы игры из корня в папку www
           cp -r index.html style.css src assets www/
-          
-          # Скачиваем Phaser локально, чтобы игра работала без интернета
           mkdir -p www/libs
           curl -L -o www/libs/phaser.min.js https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js
-          
-          # Меняем ссылку в index.html с интернет-версии на локальную
           sed -i 's|https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js|libs/phaser.min.js|' www/index.html
 
       - name: Create Capacitor Config
@@ -55,8 +50,13 @@ jobs:
 
       - name: Generate App Icons and Splash
         run: |
-          # Capacitor ищет иконку в папке resources
-          npx @capacitor/assets generate --android
+          # Страховка: если иконка лежит в assets или в корне, копируем её в resources
+          mkdir -p resources
+          if [ -f "assets/icon.png" ]; then cp assets/icon.png resources/icon.png; fi
+          if [ -f "icon.png" ]; then cp icon.png resources/icon.png; fi
+          
+          # Запускаем генерацию иконок (берет из resources/icon.png)
+          npx @capacitor/assets generate --android --iconBackgroundColor '#1a1a2e' --iconBackgroundColorDark '#1a1a2e'
 
       - name: Sync Capacitor
         run: npx cap sync android
