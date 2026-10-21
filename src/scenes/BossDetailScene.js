@@ -20,12 +20,8 @@ export default class BossDetailScene extends Phaser.Scene {
     this.add.image(360, 180, 'boss' + this.bossIndex).setDisplaySize(180, 180);
     this.add.text(360, 300, this.boss.name, { fontSize: '48px', color: '#e74c3c', fontStyle: 'bold', stroke: '#000', strokeThickness: 8 }).setOrigin(0.5);
 
-    // УВЕЛИЧИЛИ РАМКУ ОПИСАНИЯ, ЧТОБЫ ВЛЕЗЛА НАГРАДА
     const descBg = this.add.graphics().fillStyle(0x2c3e50, 0.9).fillRoundedRect(160, 350, 400, 120, 20).lineStyle(4, 0x00ff9d, 1).strokeRoundedRect(160, 350, 400, 120, 20);
-    
     this.add.text(360, 385, this.boss.description, { fontSize: '18px', color: '#fff', align: 'center', wordWrap: { width: 360 } }).setOrigin(0.5);
-    
-    // ДОБАВИЛИ НАГРАДУ
     this.add.text(360, 435, `Награда: ${this.boss.reward} Фузов`, { fontSize: '22px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5);
 
     this.add.text(360, 520, 'ВЫБЕРИТЕ БОЙЦОВ', { fontSize: '26px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 5 }).setOrigin(0.5);
@@ -52,7 +48,11 @@ export default class BossDetailScene extends Phaser.Scene {
     container.add([shadow, bg, highlight, txt]);
     container.setSize(width, height).setInteractive({ useHandCursor: true });
     container.on('pointerdown', () => { container.y += 5; });
-    container.on('pointerup', () => { container.y -= 5; onClick(); });
+    // ИСПОЛЬЗУЕМ POINTERUP И ЗАДЕРЖКУ, ЧТОБЫ КЛИК НЕ ПРОВАЛИВАЛСЯ
+    container.on('pointerup', () => { 
+        container.y -= 5; 
+        this.time.delayedCall(50, onClick); 
+    });
     container.on('pointerout', () => { container.y = y; });
     return container;
   }
@@ -75,10 +75,19 @@ export default class BossDetailScene extends Phaser.Scene {
 
   openCharSelect(slotIndex, slotContainer, slotBg, plusIcon) {
     const overlay = this.add.rectangle(360, 640, 720, 1280, 0x000000, 0.9).setDepth(100).setInteractive();
-    const panel = this.add.graphics().setDepth(101).fillStyle(0x2c3e50, 1).fillRoundedRect(80, 200, 560, 880, 30).lineStyle(4, 0x3498db, 1).strokeRoundedRect(80, 200, 560, 880, 30);
-    const title = this.add.text(360, 260, 'ВЫБЕРИТЕ БОЙЦА', { fontSize: '32px', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5).setDepth(102);
+    
+    // ОКНО ВЫБОРА (уменьшили высоту до 800, чтобы влезло)
+    const panel = this.add.graphics().setDepth(101).fillStyle(0x2c3e50, 1).fillRoundedRect(80, 200, 560, 800, 30).lineStyle(4, 0x3498db, 1).strokeRoundedRect(80, 200, 560, 800, 30);
+    const title = this.add.text(360, 250, 'ВЫБЕРИТЕ БОЙЦА', { fontSize: '32px', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5).setDepth(102);
 
-    let y = 340;
+    // КОНТЕЙНЕР ДЛЯ СПИСКА (с маской)
+    const listContainer = this.add.container(0, 0).setDepth(102);
+    const maskShape = this.make.graphics();
+    maskShape.fillRect(80, 300, 560, 600); // Маска для списка
+    const mask = maskShape.createGeometryMask();
+    listContainer.setMask(mask);
+
+    let y = 320; // Начало списка
     const elements = [overlay, panel, title];
 
     CHARACTERS.forEach(char => {
@@ -88,40 +97,80 @@ export default class BossDetailScene extends Phaser.Scene {
       const isAlreadySelected = this.selectedChars.includes(char.id);
       const btnColor = isAlreadySelected ? 0x333333 : 0x2c3e50;
 
-      const btnBg = this.add.graphics().setDepth(102)
+      const btnBg = this.add.graphics()
         .fillStyle(btnColor, 1).fillRoundedRect(120, y, 480, 110, 20)
         .lineStyle(3, isAlreadySelected ? 0x555555 : 0x00ff9d, 1).strokeRoundedRect(120, y, 480, 110, 20);
       
-      const avatarBg = this.add.circle(180, y + 55, 40, 0x000000).setDepth(102);
-      const avatarImg = this.add.image(180, y + 55, char.id).setDisplaySize(70, 70).setDepth(103);
+      const avatarBg = this.add.circle(180, y + 55, 40, 0x000000);
+      const avatarImg = this.add.image(180, y + 55, char.id).setDisplaySize(70, 70);
 
-      const charName = this.add.text(250, y + 30, char.name, { fontSize: '26px', color: isAlreadySelected ? '#777' : '#fff', fontStyle: 'bold' }).setDepth(102);
-      const charHp = this.add.text(250, y + 70, `HP: ${getCharacterMaxHp(char.id, state.level)}`, { fontSize: '20px', color: isAlreadySelected ? '#555' : '#00ff9d' }).setDepth(102);
+      const charName = this.add.text(250, y + 30, char.name, { fontSize: '26px', color: isAlreadySelected ? '#777' : '#fff', fontStyle: 'bold' });
+      const charHp = this.add.text(250, y + 70, `HP: ${getCharacterMaxHp(char.id, state.level)}`, { fontSize: '20px', color: isAlreadySelected ? '#555' : '#00ff9d' });
 
-      elements.push(btnBg, avatarBg, avatarImg, charName, charHp);
+      listContainer.add([btnBg, avatarBg, avatarImg, charName, charHp]);
 
-      if (!isAlreadySelected) {
-        const zone = this.add.zone(360, y + 55, 480, 110).setDepth(103).setInteractive();
-        zone.on('pointerdown', () => {
-          this.selectedChars[slotIndex] = char.id;
-          
-          plusIcon.setVisible(false);
-          slotBg.setStrokeStyle(6, 0x2ecc71); 
-
-          const img = this.add.image(0, 0, char.id).setDisplaySize(110, 110);
-          slotContainer.add(img);
-          
-          this.time.delayedCall(10, () => elements.forEach(el => el.destroy()));
-        });
-        elements.push(zone);
-      }
+      const zone = this.add.zone(360, y + 55, 480, 110).setInteractive();
+      zone.on('pointerdown', () => {
+        if (isAlreadySelected) {
+            // СНЯТЬ ВЫБОР
+            this.selectedChars[slotIndex] = null;
+            plusIcon.setVisible(true);
+            slotBg.setStrokeStyle(6, 0xffffff, 0.5);
+            // Очищаем слот от картинки (если она была)
+            slotContainer.list.forEach(child => { if (child.texture) child.destroy(); });
+            this.time.delayedCall(10, () => { elements.forEach(el => el.destroy()); listContainer.destroy(); });
+        } else {
+            // ВЫБРАТЬ
+            this.selectedChars[slotIndex] = char.id;
+            plusIcon.setVisible(false);
+            slotBg.setStrokeStyle(6, 0x2ecc71); 
+            const img = this.add.image(0, 0, char.id).setDisplaySize(110, 110);
+            slotContainer.add(img);
+            this.time.delayedCall(10, () => { elements.forEach(el => el.destroy()); listContainer.destroy(); });
+        }
+      });
+      listContainer.add(zone);
 
       y += 130;
     });
 
-    const cancelBtn = this.add.text(360, 1020, 'ОТМЕНА', { fontSize: '28px', color: '#e74c3c', fontStyle: 'bold', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5).setDepth(102).setInteractive();
-    cancelBtn.on('pointerdown', () => {
-        this.time.delayedCall(10, () => elements.forEach(el => el.destroy()));
+    // Добавляем зону скролла для контейнера
+    let startY = 0;
+    let startListY = 0;
+    let isDragging = false;
+    let moved = false;
+
+    const scrollZone = this.add.zone(360, 600, 560, 600).setInteractive().setDepth(103); // Прозрачная зона для свайпа
+    elements.push(scrollZone);
+
+    scrollZone.on('pointerdown', (p) => {
+        startY = p.y;
+        startListY = listContainer.y;
+        isDragging = true;
+        moved = false;
+    });
+
+    scrollZone.on('pointermove', (p) => {
+        if (isDragging) {
+            let diff = p.y - startY;
+            if (Math.abs(diff) > 10) moved = true;
+            if (moved) {
+                let newY = startListY + diff;
+                // Ограничиваем скролл
+                let minScroll = -(CHARACTERS.length * 130 - 580); 
+                if (newY > 0) newY = 0;
+                if (newY < minScroll) newY = minScroll;
+                listContainer.y = newY;
+            }
+        }
+    });
+
+    scrollZone.on('pointerup', () => { isDragging = false; });
+
+    // Кнопка ОТМЕНА
+    const cancelBtn = this.add.text(360, 950, 'ОТМЕНА', { fontSize: '28px', color: '#e74c3c', fontStyle: 'bold', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5).setDepth(102).setInteractive();
+    cancelBtn.on('pointerup', () => {
+        this.time.delayedCall(10, () => { elements.forEach(el => el.destroy()); listContainer.destroy(); });
     });
     elements.push(cancelBtn);
   }
