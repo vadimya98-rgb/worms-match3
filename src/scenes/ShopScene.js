@@ -57,52 +57,60 @@ export default class ShopScene extends Phaser.Scene {
   }
 
   renderCharacters() {
-    let y = 220;
+    let y = 200; // Начинаем чуть выше
     const isArmorUnlocked = Save.data.bosses['boss2'] === 'defeated';
 
     CHARACTERS.forEach((char) => {
       const state = Save.getCharacter(char.id);
       
-      const bg = this.add.graphics().fillStyle(0xffffff, 0.1).fillRoundedRect(40, y, 640, 160, 20).lineStyle(2, 0xffffff, 0.3).strokeRoundedRect(40, y, 640, 160, 20);
+      // Увеличили высоту карточки до 190
+      const bg = this.add.graphics().fillStyle(0xffffff, 0.1).fillRoundedRect(40, y, 640, 190, 20).lineStyle(2, 0xffffff, 0.3).strokeRoundedRect(40, y, 640, 190, 20);
       this.container.add(bg);
 
-      const charImg = this.add.image(100, y + 80, char.id).setDisplaySize(70, 70);
+      const charImg = this.add.image(100, y + 60, char.id).setDisplaySize(70, 70);
       this.container.add(charImg);
 
       this.container.add(this.add.text(150, y + 20, state.owned ? `${char.name} (Ур. ${state.level})` : char.name, { fontSize: '24px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }));
       
       if (state.owned) {
-        this.container.add(this.add.text(150, y + 65, `HP: ${getCharacterMaxHp(char.id, state.level)}`, { fontSize: '18px', color: '#2ecc71', fontStyle: 'bold', stroke: '#000', strokeThickness: 4 }));
+        this.container.add(this.add.text(150, y + 55, `HP: ${getCharacterMaxHp(char.id, state.level)}`, { fontSize: '16px', color: '#2ecc71', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }));
         let armorVal = getCharacterMaxArmor(char.id, state.armorLevel);
-        this.container.add(this.add.text(150, y + 95, `Броня: ${armorVal}`, { fontSize: '18px', color: '#3498db', fontStyle: 'bold', stroke: '#000', strokeThickness: 4 }));
-      } else {
-        this.container.add(this.add.text(150, y + 65, char.description, { fontSize: '14px', color: '#ccc', wordWrap: { width: 300 } }));
+        this.container.add(this.add.text(150, y + 80, `Броня: ${armorVal}`, { fontSize: '16px', color: '#3498db', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }));
       }
 
+      // РАМКА С ОПИСАНИЕМ
+      const descBg = this.add.graphics().fillStyle(0x000000, 0.4).fillRoundedRect(60, y + 110, 380, 65, 10).lineStyle(1, 0xffffff, 0.2).strokeRoundedRect(60, y + 110, 380, 65, 10);
+      this.container.add(descBg);
+      
+      this.container.add(this.add.text(70, y + 120, char.description, { 
+          fontSize: '14px', color: '#ddd', wordWrap: { width: 360 }, fontStyle: 'italic' 
+      }));
+
+      // КНОПКИ
       if (!state.owned) {
-          this.createCharButton(600, y + 80, 'КУПИТЬ', char.price, Save.getFuzz() >= char.price, () => {
+          this.createCharButton(600, y + 95, 'КУПИТЬ', char.price, Save.getFuzz() >= char.price, () => {
               if (Save.spendFuzz(char.price)) { Save.ownCharacter(char.id); this.updateFuzzUI(); this.refreshContent(); }
           });
       } else {
           const hpCost = getUpgradeCost(char.id, state.level);
-          this.createCharButton(600, y + 45, hpCost === Infinity ? 'HP MAX' : 'УЛУЧШИТЬ ХП', hpCost, hpCost !== Infinity && Save.getFuzz() >= hpCost, () => {
+          this.createCharButton(600, y + 50, hpCost === Infinity ? 'HP MAX' : 'УЛУЧШИТЬ ХП', hpCost, hpCost !== Infinity && Save.getFuzz() >= hpCost, () => {
               if (hpCost !== Infinity && Save.spendFuzz(hpCost)) { Save.upgradeCharacter(char.id); this.updateFuzzUI(); this.refreshContent(); }
           });
 
           if (isArmorUnlocked) {
               const armorCost = getArmorUpgradeCost(char.id, state.armorLevel);
-              this.createCharButton(600, y + 115, armorCost === Infinity ? 'БРОНЯ MAX' : 'УЛУЧШИТЬ БР.', armorCost, armorCost !== Infinity && Save.getFuzz() >= armorCost, () => {
+              this.createCharButton(600, y + 130, armorCost === Infinity ? 'БРОНЯ MAX' : 'УЛУЧШИТЬ БР.', armorCost, armorCost !== Infinity && Save.getFuzz() >= armorCost, () => {
                   if (armorCost !== Infinity && Save.spendFuzz(armorCost)) { Save.upgradeArmor(char.id); this.updateFuzzUI(); this.refreshContent(); }
               }, 0x3498db);
           } else {
-              const btn = this.add.container(600, y + 115);
+              const btn = this.add.container(600, y + 130);
               const bBg = this.add.graphics().fillStyle(0x333333, 1).fillRoundedRect(-80, -20, 160, 45, 12);
               const bMain = this.add.graphics().fillStyle(0x555555, 1).fillRoundedRect(-80, -25, 160, 45, 12);
               btn.add([bBg, bMain, this.add.text(0, -10, '🔒 ЗАКРЫТО', { fontSize: '14px', color: '#888', fontStyle: 'bold', stroke: '#000', strokeThickness: 2 }).setOrigin(0.5)]);
               this.container.add(btn);
           }
       }
-      y += 175;
+      y += 210; // Увеличили шаг
     });
   }
 
@@ -133,7 +141,6 @@ export default class ShopScene extends Phaser.Scene {
     const medkitPrice = 150;
     const antitoxinPrice = 200;
 
-    // АПТЕЧКА
     this.container.add(this.add.graphics().fillStyle(0xffffff, 0.1).fillRoundedRect(40, y, 640, 130, 20).lineStyle(2, 0xffffff, 0.3).strokeRoundedRect(40, y, 640, 130, 20));
     this.container.add(this.add.image(70, y + 40, 'icon_medkit').setDisplaySize(40, 40));
     this.container.add(this.add.text(110, y + 30, 'Аптечка', { fontSize: '26px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }));
@@ -143,7 +150,6 @@ export default class ShopScene extends Phaser.Scene {
     });
     y += 150;
 
-    // АНТИТОКСИН
     let antiCount = Save.getAntitoxins ? Save.getAntitoxins() : 0;
     this.container.add(this.add.graphics().fillStyle(0xffffff, 0.1).fillRoundedRect(40, y, 640, 130, 20).lineStyle(2, 0xffffff, 0.3).strokeRoundedRect(40, y, 640, 130, 20));
     this.container.add(this.add.image(70, y + 40, 'icon_antitoksin').setDisplaySize(40, 40));
