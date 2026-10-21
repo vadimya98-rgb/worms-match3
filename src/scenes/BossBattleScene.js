@@ -82,7 +82,6 @@ export default class BossBattleScene extends Phaser.Scene {
     this.createBoard();
     this.setupInput();
     
-    // ПЕРВЫЙ БАННЕР, РАЗБЛОКИРУЕТ ХОД
     this.showTurnBanner('ВАШ ХОД', 0x2ecc71);
   }
 
@@ -225,9 +224,14 @@ export default class BossBattleScene extends Phaser.Scene {
   createTile(row, col, colorIndex) {
     const x = this.OFFSET_X + col * this.TILE_SIZE + this.TILE_SIZE / 2;
     const y = this.OFFSET_Y + row * this.TILE_SIZE + this.TILE_SIZE / 2;
+    
+    // УСТАНАВЛИВАЕМ DEPTH, ЧТОБЫ ФИШКИ БЫЛИ ПОВЕРХ ФОНОВ
     const tileBg = this.add.graphics().fillStyle(0x34495e, 1).fillRoundedRect(-this.TILE_SIZE/2 + 4, -this.TILE_SIZE/2 + 4, this.TILE_SIZE - 8, this.TILE_SIZE - 8, 15);
     tileBg.setPosition(x, y);
+    tileBg.setDepth(5);
+
     const tile = this.add.image(x, y, 'weapon' + colorIndex).setDisplaySize(this.TILE_SIZE - this.GAP - 10, this.TILE_SIZE - this.GAP - 10);
+    tile.setDepth(10); // Фишка поверх фона
     
     if (this.hiddenWeapons.includes(colorIndex)) {
         tile.setAlpha(0.2);
@@ -272,29 +276,62 @@ export default class BossBattleScene extends Phaser.Scene {
     this.grid[t1.gridRow][t1.gridCol] = t2; this.grid[t2.gridRow][t2.gridCol] = t1;
     const tr = t1.gridRow; t1.gridRow = t2.gridRow; t2.gridRow = tr;
     const tc = t1.gridCol; t1.gridCol = t2.gridCol; t2.gridCol = tc;
-    this.tweens.add({ targets: [t1, t1.bg, t2, t2.bg], x: (t) => (t === t1) ? this.OFFSET_X + t1.gridCol * this.TILE_SIZE + this.TILE_SIZE / 2 : (t === t2 ? this.OFFSET_X + t2.gridCol * this.TILE_SIZE + this.TILE_SIZE / 2 : t.x), y: (t) => (t === t1) ? this.OFFSET_Y + t1.gridRow * this.TILE_SIZE + this.TILE_SIZE / 2 : (t === t2 ? this.OFFSET_Y + t2.gridRow * this.TILE_SIZE + this.TILE_SIZE / 2 : t.y), duration: 200, ease: 'Back.easeOut', onComplete: () => {
-      const matches = this.findMatches();
-      if (matches.length > 0) { t1.bg.destroy(); t2.bg.destroy(); this.removeTiles(matches); }
-      else this.swapBack(t1, t2);
-    }});
+    
+    // ИСПРАВЛЕНИЕ: ФОНЫ ТЕПЕРЬ ТОЖЕ ДВИГАЮТСЯ ВМЕСТЕ С ФИШКАМИ
+    this.tweens.add({ 
+        targets: [t1, t1.bg, t2, t2.bg], 
+        x: (target) => {
+            if (target === t1 || target === t1.bg) return this.OFFSET_X + t1.gridCol * this.TILE_SIZE + this.TILE_SIZE / 2;
+            if (target === t2 || target === t2.bg) return this.OFFSET_X + t2.gridCol * this.TILE_SIZE + this.TILE_SIZE / 2;
+            return target.x;
+        },
+        y: (target) => {
+            if (target === t1 || target === t1.bg) return this.OFFSET_Y + t1.gridRow * this.TILE_SIZE + this.TILE_SIZE / 2;
+            if (target === t2 || target === t2.bg) return this.OFFSET_Y + t2.gridRow * this.TILE_SIZE + this.TILE_SIZE / 2;
+            return target.y;
+        },
+        duration: 200, ease: 'Back.easeOut', 
+        onComplete: () => {
+            const matches = this.findMatches();
+            if (matches.length > 0) { t1.bg.destroy(); t2.bg.destroy(); this.removeTiles(matches); }
+            else this.swapBack(t1, t2);
+        }
+    });
   }
 
   swapBack(t1, t2) {
     this.grid[t1.gridRow][t1.gridCol] = t2; this.grid[t2.gridRow][t2.gridCol] = t1;
     const tr = t1.gridRow; t1.gridRow = t2.gridRow; t2.gridRow = tr;
     const tc = t1.gridCol; t1.gridCol = t2.gridCol; t2.gridCol = tc;
-    this.tweens.add({ targets: [t1, t1.bg, t2, t2.bg], x: (t) => (t === t1) ? this.OFFSET_X + t1.gridCol * this.TILE_SIZE + this.TILE_SIZE / 2 : (t === t2 ? this.OFFSET_X + t2.gridCol * this.TILE_SIZE + this.TILE_SIZE / 2 : t.x), y: (t) => (t === t1) ? this.OFFSET_Y + t1.gridRow * this.TILE_SIZE + this.TILE_SIZE / 2 : (t === t2 ? this.OFFSET_Y + t2.gridRow * this.TILE_SIZE + this.TILE_SIZE / 2 : t.y), duration: 200, ease: 'Back.easeIn', onComplete: () => { this.isBusy = false; } });
+    
+    // ИСПРАВЛЕНИЕ: ФОНЫ ТЕПЕРЬ ТОЖЕ ДВИГАЮТСЯ ВМЕСТЕ С ФИШКАМИ ПРИ ВОЗВРАТЕ
+    this.tweens.add({ 
+        targets: [t1, t1.bg, t2, t2.bg], 
+        x: (target) => {
+            if (target === t1 || target === t1.bg) return this.OFFSET_X + t1.gridCol * this.TILE_SIZE + this.TILE_SIZE / 2;
+            if (target === t2 || target === t2.bg) return this.OFFSET_X + t2.gridCol * this.TILE_SIZE + this.TILE_SIZE / 2;
+            return target.x;
+        },
+        y: (target) => {
+            if (target === t1 || target === t1.bg) return this.OFFSET_Y + t1.gridRow * this.TILE_SIZE + this.TILE_SIZE / 2;
+            if (target === t2 || target === t2.bg) return this.OFFSET_Y + t2.gridRow * this.TILE_SIZE + this.TILE_SIZE / 2;
+            return target.y;
+        },
+        duration: 200, ease: 'Back.easeIn', 
+        onComplete: () => { this.isBusy = false; }
+    });
   }
 
   findMatches() {
     const m = [];
     for (let r = 0; r < this.ROWS; r++) for (let c = 0; c < this.COLS - 2; c++) {
       const a=this.grid[r][c], b=this.grid[r][c+1], d=this.grid[r][c+2];
-      if (a&&b&&d&&a.colorIndex===b.colorIndex&&b.colorIndex===d.colorIndex) { if(!m.includes(a))m.push(a); if(!m.includes(b))m.push(b); if(!m.includes(d))m.push(d); }
+      // ПРОВЕРЯЕМ ACTIVE, ЧТОБЫ НЕ БРАТЬ УНИЧТОЖЕННЫЕ ФИШКИ
+      if (a && b && d && a.active && b.active && d.active && a.colorIndex===b.colorIndex && b.colorIndex===d.colorIndex) { if(!m.includes(a))m.push(a); if(!m.includes(b))m.push(b); if(!m.includes(d))m.push(d); }
     }
     for (let c = 0; c < this.COLS; c++) for (let r = 0; r < this.ROWS - 2; r++) {
       const a=this.grid[r][c], b=this.grid[r+1][c], d=this.grid[r+2][c];
-      if (a&&b&&d&&a.colorIndex===b.colorIndex&&b.colorIndex===d.colorIndex) { if(!m.includes(a))m.push(a); if(!m.includes(b))m.push(b); if(!m.includes(d))m.push(d); }
+      if (a && b && d && a.active && b.active && d.active && a.colorIndex===b.colorIndex && b.colorIndex===d.colorIndex) { if(!m.includes(a))m.push(a); if(!m.includes(b))m.push(b); if(!m.includes(d))m.push(d); }
     }
     return m;
   }
@@ -306,10 +343,13 @@ export default class BossBattleScene extends Phaser.Scene {
         groups[t.colorIndex].push(t);
     });
 
+    // ПРОВЕРЯЕМ СУЩЕСТВОВАНИЕ И ACTIVE ПЕРЕД УНИЧТОЖЕНИЕМ
     tiles.forEach(t => { 
-        this.grid[t.gridRow][t.gridCol] = null; 
-        t.bg.destroy(); 
-        t.destroy(); 
+        if (t && t.active) {
+            this.grid[t.gridRow][t.gridCol] = null; 
+            if (t.bg) t.bg.destroy(); 
+            t.destroy(); 
+        }
     });
 
     let delayCounter = 0;
@@ -386,7 +426,6 @@ export default class BossBattleScene extends Phaser.Scene {
     this.time.delayedCall(3500 + (delayCounter * 300), () => this.applyGravity());
   }
 
-  // ИСПРАВЛЕНИЕ БАГА С ХОДОМ БОССА
   showTurnBanner(text, colorNum) {
     this.isBusy = true;
     const bannerBg = this.add.graphics().fillStyle(0x000000, 0.8).fillRoundedRect(160, 600, 400, 100, 30).lineStyle(4, colorNum, 1).strokeRoundedRect(160, 600, 400, 100, 30).setDepth(200);
@@ -399,7 +438,6 @@ export default class BossBattleScene extends Phaser.Scene {
         this.tweens.add({ targets: [bannerBg, txt], alpha: 0, scale: 0.5, duration: 300, onComplete: () => {
             bannerBg.destroy(); txt.destroy();
             
-            // БЛОКИРОВКА СНИМАЕТСЯ ТОЛЬКО КОГДА НАЧИНАЕТСЯ ХОД ИГРОКА
             if (text === 'ВАШ ХОД') {
                 this.isBusy = false;
             }
@@ -451,9 +489,12 @@ export default class BossBattleScene extends Phaser.Scene {
     for (let c = 0; c < this.COLS; c++) {
       let emptyRow = this.ROWS - 1;
       for (let r = this.ROWS - 1; r >= 0; r--) {
-        if (this.grid[r][c] !== null) {
+        if (this.grid[r][c] !== null && this.grid[r][c].active) {
           if (r !== emptyRow) {
-            const t = this.grid[r][c]; this.grid[emptyRow][c] = t; this.grid[r][c] = null; t.gridRow = emptyRow;
+            const t = this.grid[r][c]; 
+            this.grid[emptyRow][c] = t; 
+            this.grid[r][c] = null; 
+            t.gridRow = emptyRow;
             this.tweens.add({ targets: [t, t.bg], y: this.OFFSET_Y + emptyRow * this.TILE_SIZE + this.TILE_SIZE / 2, duration: 250, ease: 'Bounce.easeOut' });
           }
           emptyRow--;
