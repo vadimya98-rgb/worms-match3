@@ -1,5 +1,6 @@
 import { Save } from '../data/save.js';
 import { getCharacterData } from '../data/characters.js';
+import { Effects } from '../utils/effects.js';
 
 export default class StarterWormScene extends Phaser.Scene {
   constructor() { super({ key: 'StarterWormScene' }); }
@@ -43,7 +44,7 @@ export default class StarterWormScene extends Phaser.Scene {
     container.add([shadow, bg, highlight, txt]);
     container.setSize(width, height).setInteractive({ useHandCursor: true });
     container.on('pointerdown', () => { container.y += 5; });
-    container.on('pointerup', () => { container.y -= 5; onClick(); });
+    container.on('pointerup', () => { container.y -= 5; Effects.click(this); onClick(); });
     container.on('pointerout', () => { container.y = y; });
   }
 }
