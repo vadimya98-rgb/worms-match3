@@ -19,7 +19,7 @@ export default class BossBattleScene extends Phaser.Scene {
     this.bossHp = this.bossData.maxHp;
     this.bossArmor = this.bossData.armor;
     this.isBusy = false; this.isGameOver = false; this.isPaused = false;
-    this.playerMovesCount = 0; // Оставляем для совместимости, но используем char.movesCount
+    this.playerMovesCount = 0; 
     this.bossPoisonTurns = 0; 
     this.bossPoisonCloud = null; 
     this.turnCount = 1; 
@@ -60,7 +60,7 @@ export default class BossBattleScene extends Phaser.Scene {
           hp: maxHp, maxHp: maxHp,
           armor: maxArmor, maxArmor: maxArmor,
           antitoxinTurns: 0,
-          movesCount: 0 // ИНДИВИДУАЛЬНЫЙ СЧЕТЧИК ДЛЯ ОГОНЬКА
+          movesCount: 0 
       };
     }).filter(c => c !== null);
 
@@ -82,6 +82,7 @@ export default class BossBattleScene extends Phaser.Scene {
     this.createBoard();
     this.setupInput();
     
+    // ПЕРВЫЙ БАННЕР, РАЗБЛОКИРУЕТ ХОД
     this.showTurnBanner('ВАШ ХОД', 0x2ecc71);
   }
 
@@ -93,7 +94,6 @@ export default class BossBattleScene extends Phaser.Scene {
 
     this.add.text(360, 100, this.bossData.name, { fontSize: '36px', color: '#e74c3c', fontStyle: 'bold', stroke: '#000', strokeThickness: 6 }).setOrigin(0.5);
     
-    // ЗАЩИТА ОТ ОТСУТСТВИЯ КАРТИНКИ
     if (this.textures.exists('boss' + this.bossIndex)) {
         this.bossSprite = this.add.image(360, 220, 'boss' + this.bossIndex).setDisplaySize(160, 160);
     } else {
@@ -186,7 +186,6 @@ export default class BossBattleScene extends Phaser.Scene {
           this.charContainers.push(antiIcon);
       }
 
-      // ОГОНЕК ТЕПЕРЬ ПРИВЯЗАН К КОНКРЕТНОМУ ПЕРСОНАЖУ (char.movesCount)
       if (isActive && char.movesCount >= 3 && !this.isBusy && !this.isGameOver) {
         const fireIcon = this.add.text(x + 50, y - 50, '🔥', { fontSize: '36px' }).setOrigin(0.5);
         this.tweens.add({ targets: fireIcon, scale: 1.4, duration: 300, yoyo: true, repeat: -1 });
@@ -381,12 +380,13 @@ export default class BossBattleScene extends Phaser.Scene {
         });
     }
 
-    this.team[this.activeCharIndex].movesCount++; // Увеличиваем счетчик ТОЛЬКО у активного персонажа
+    this.team[this.activeCharIndex].movesCount++; 
     this.renderTeamUI();
     
     this.time.delayedCall(3500 + (delayCounter * 300), () => this.applyGravity());
   }
 
+  // ИСПРАВЛЕНИЕ БАГА С ХОДОМ БОССА
   showTurnBanner(text, colorNum) {
     this.isBusy = true;
     const bannerBg = this.add.graphics().fillStyle(0x000000, 0.8).fillRoundedRect(160, 600, 400, 100, 30).lineStyle(4, colorNum, 1).strokeRoundedRect(160, 600, 400, 100, 30).setDepth(200);
@@ -398,7 +398,11 @@ export default class BossBattleScene extends Phaser.Scene {
     this.time.delayedCall(1500, () => {
         this.tweens.add({ targets: [bannerBg, txt], alpha: 0, scale: 0.5, duration: 300, onComplete: () => {
             bannerBg.destroy(); txt.destroy();
-            this.isBusy = false;
+            
+            // БЛОКИРОВКА СНИМАЕТСЯ ТОЛЬКО КОГДА НАЧИНАЕТСЯ ХОД ИГРОКА
+            if (text === 'ВАШ ХОД') {
+                this.isBusy = false;
+            }
             this.renderTeamUI();
         }});
     });
@@ -639,7 +643,7 @@ export default class BossBattleScene extends Phaser.Scene {
                     }
 
                     if (attackIndex < attacks) {
-                        performAttack(attackIndex + 1); // Повторная атака для Пирата
+                        performAttack(attackIndex + 1); 
                     } else {
                         if (this.bossPoisonTurns > 0) {
                             this.bossHp = Math.max(0, this.bossHp - 40);
@@ -740,7 +744,6 @@ export default class BossBattleScene extends Phaser.Scene {
     const txt = this.add.text(x + Phaser.Math.Between(-20, 20), y + Phaser.Math.Between(-10, 10), text, { 
         fontSize: '36px', color, fontStyle: 'bold', stroke: '#000', strokeThickness: 6 
     }).setOrigin(0.5).setDepth(250);
-    // УВЕЛИЧИЛИ DURATION ДО 2000, ЧТОБЫ БЫЛО ВИДНО
     this.tweens.add({ targets: txt, y: y - 100, alpha: 0, scale: 1.2, duration: 2000, onComplete: () => txt.destroy() });
   }
 
