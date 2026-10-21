@@ -13,15 +13,15 @@ import AdminScene from './scenes/AdminScene.js';
 
 const config = {
   type: Phaser.AUTO,
+  // МЕНЯЕМ РАЗРЕШЕНИЕ НА ВЫТЯНУТОЕ (как экран телефона)
   width: 720,
-  height: 1280,
-  // Убираем backgroundColor, чтобы был виден CSS-фон
-  transparent: true, 
+  height: 1600, 
+  backgroundColor: '#1a1a2e',
   parent: 'game',
   
   scale: {
-    // FIT вписывает игру целиком, ничего не обрезая
-    mode: Phaser.Scale.FIT, 
+    // ENVELOP заполняет экран, сохраняя пропорции (если пропорции совпадают, обрезки нет)
+    mode: Phaser.Scale.ENVELOP, 
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
 
