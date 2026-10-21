@@ -21,11 +21,8 @@ const config = {
   parent: 'game',
   
   scale: {
-    // ИЗМЕНЕНО: ENVELOP растягивает игру на весь экран, 
-    // заполняя пустые полосы сверху и снизу
-    mode: Phaser.Scale.ENVELOP, 
-    
-    // Центрируем холст
+    // ВОЗВРАЩАЕМ FIT, чтобы игра влезала полностью и ничего не терялось
+    mode: Phaser.Scale.FIT, 
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
 
