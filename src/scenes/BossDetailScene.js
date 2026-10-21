@@ -9,6 +9,7 @@ export default class BossDetailScene extends Phaser.Scene {
     this.bossIndex = data.bossIndex;
     this.boss = BOSSES[this.bossIndex];
     this.selectedChars = [null, null]; 
+    this.menuOpen = false; // Флаг, открыто ли меню
   }
 
   create() {
@@ -61,17 +62,13 @@ export default class BossDetailScene extends Phaser.Scene {
     container.add(plus);
     const zone = this.add.zone(0, 0, 150, 150).setInteractive({ useHandCursor: true });
     container.add(zone);
-    
-    // ИСПОЛЬЗУЕМ POINTERUP, ЧТОБЫ ОКНО ОТКРЫВАЛОСЬ ПОСЛЕ ОТПУСКАНИЯ ПАЛЬЦА
     zone.on('pointerup', () => this.openCharSelect(index, container, bg, plus));
-    
     this.slotContainers[index] = container;
   }
 
   openCharSelect(slotIndex, slotContainer, slotBg, plusIcon) {
-    // ЗАЩИТА ОТ СКВОЗНОГО КЛИКА (ЖДЕМ 200МС)
-    let canSelect = false;
-    this.time.delayedCall(200, () => { canSelect = true; });
+    if (this.menuOpen) return;
+    this.menuOpen = true;
 
     const overlay = this.add.rectangle(360, 640, 720, 1280, 0x000000, 0.9).setDepth(100).setInteractive();
     const panel = this.add.graphics().setDepth(101).fillStyle(0x2c3e50, 1).fillRoundedRect(80, 200, 560, 800, 30).lineStyle(4, 0x3498db, 1).strokeRoundedRect(80, 200, 560, 800, 30);
@@ -83,8 +80,48 @@ export default class BossDetailScene extends Phaser.Scene {
     const mask = maskShape.createGeometryMask();
     listContainer.setMask(mask);
 
+    const elements = [overlay, panel, title, listContainer];
+
+    let dragStartY = 0;
+    let listStartY = 0;
+    let isDragging = false;
+
+    const dragMove = (p) => {
+        if (!this.menuOpen) return;
+        if (Math.abs(p.y - dragStartY) > 10) isDragging = true;
+        if (isDragging) {
+            let newY = listStartY + (p.y - dragStartY);
+            let minScroll = -(CHARACTERS.length * 130 - 580);
+            if (newY > 0) newY = 0;
+            if (newY < minScroll) newY = minScroll;
+            listContainer.y = newY;
+        }
+    };
+
+    const dragStart = (p) => {
+        if (!this.menuOpen) return;
+        dragStartY = p.y;
+        listStartY = listContainer.y;
+        isDragging = false;
+    };
+
+    const dragEnd = () => { isDragging = false; };
+
+    // Подключаем глобальные слушатели для скролла
+    this.input.on('pointerdown', dragStart);
+    this.input.on('pointermove', dragMove);
+    this.input.on('pointerup', dragEnd);
+
+    const closeMenu = () => {
+        this.menuOpen = false;
+        // Отключаем слушатели, чтобы не мешали в других сценах
+        this.input.off('pointerdown', dragStart);
+        this.input.off('pointermove', dragMove);
+        this.input.off('pointerup', dragEnd);
+        elements.forEach(el => el.destroy());
+    };
+
     let y = 320;
-    const elements = [overlay, panel, title];
 
     CHARACTERS.forEach(char => {
       const state = Save.getCharacter(char.id);
@@ -105,54 +142,36 @@ export default class BossDetailScene extends Phaser.Scene {
       listContainer.add([btnBg, avatarBg, avatarImg, charName, charHp]);
 
       const zone = this.add.zone(360, y + 55, 480, 110).setInteractive();
-      zone.on('pointerup', () => { 
-        if (!canSelect) return; // ИГНОРИРУЕМ, ЕСЛИ ОКНО ТОЛЬКО ЧТО ОТКРЫЛОСЬ
-        
-        if (isAlreadySelected) {
-            this.selectedChars[slotIndex] = null;
-            plusIcon.setVisible(true);
-            slotBg.setStrokeStyle(6, 0xffffff, 0.5);
-            slotContainer.list.forEach(child => { if (child.texture) child.destroy(); });
-        } else {
-            this.selectedChars[slotIndex] = char.id;
-            plusIcon.setVisible(false);
-            slotBg.setStrokeStyle(6, 0x2ecc71); 
-            const img = this.add.image(0, 0, char.id).setDisplaySize(110, 110);
-            slotContainer.add(img);
+      
+      // ЗАЩИТА ОТ СКВОЗНЫХ КЛИКОВ (ОТСЛЕЖИВАЕМ РАССТОЯНИЕ)
+      let startX = 0, startY = 0;
+      zone.on('pointerdown', (p) => { startX = p.x; startY = p.y; });
+      zone.on('pointerup', (p) => {
+        if (!this.menuOpen) return;
+        let dist = Phaser.Math.Distance.Between(startX, startY, p.x, p.y);
+        if (dist < 15) { // Если палец сдвинулся меньше 15 пикселей, это клик
+            if (isAlreadySelected) {
+                this.selectedChars[slotIndex] = null;
+                plusIcon.setVisible(true);
+                slotBg.setStrokeStyle(6, 0xffffff, 0.5);
+                slotContainer.list.forEach(child => { if (child.texture) child.destroy(); });
+            } else {
+                this.selectedChars[slotIndex] = char.id;
+                plusIcon.setVisible(false);
+                slotBg.setStrokeStyle(6, 0x2ecc71); 
+                const img = this.add.image(0, 0, char.id).setDisplaySize(110, 110);
+                slotContainer.add(img);
+            }
+            closeMenu();
         }
-        this.time.delayedCall(10, () => { elements.forEach(el => el.destroy()); listContainer.destroy(); });
       });
       listContainer.add(zone);
 
       y += 130;
     });
 
-    let startY = 0, startListY = 0, isDragging = false, moved = false;
-    
-    panel.setInteractive(new Phaser.Geom.Rectangle(80, 200, 560, 800), Phaser.Geom.Rectangle.Contains);
-
-    panel.on('pointerdown', (p) => {
-        startY = p.y; startListY = listContainer.y; isDragging = true; moved = false;
-    });
-    panel.on('pointermove', (p) => {
-        if (isDragging) {
-            let diff = p.y - startY;
-            if (Math.abs(diff) > 10) moved = true;
-            if (moved) {
-                let newY = startListY + diff;
-                let minScroll = -(CHARACTERS.length * 130 - 580); 
-                if (newY > 0) newY = 0;
-                if (newY < minScroll) newY = minScroll;
-                listContainer.y = newY;
-            }
-        }
-    });
-    panel.on('pointerup', () => { isDragging = false; });
-
     const cancelBtn = this.add.text(360, 950, 'ОТМЕНА', { fontSize: '28px', color: '#e74c3c', fontStyle: 'bold', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5).setDepth(102).setInteractive();
-    cancelBtn.on('pointerup', () => {
-        this.time.delayedCall(10, () => { elements.forEach(el => el.destroy()); listContainer.destroy(); });
-    });
+    cancelBtn.on('pointerup', () => { closeMenu(); });
     elements.push(cancelBtn);
   }
 }
