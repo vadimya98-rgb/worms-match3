@@ -15,6 +15,7 @@ export default class ShopScene extends Phaser.Scene {
     this.buildHeader();
     this.buildTabs();
     this.refreshContent();
+    this.setupScroll();
   }
 
   buildHeader() {
@@ -49,6 +50,8 @@ export default class ShopScene extends Phaser.Scene {
 
   refreshContent() {
     this.container.removeAll(true);
+    this.container.y = 200; // Сброс скролла при смене вкладки
+    
     this.tabCharsBtn.setBackgroundColor(this.currentTab === 'characters' ? '#2ecc71' : '#2c3e50');
     this.tabBoostsBtn.setBackgroundColor(this.currentTab === 'boosts' ? '#2ecc71' : '#2c3e50');
 
@@ -57,13 +60,12 @@ export default class ShopScene extends Phaser.Scene {
   }
 
   renderCharacters() {
-    let y = 200; // Начинаем чуть выше
+    let y = 0; // Координаты внутри контейнера
     const isArmorUnlocked = Save.data.bosses['boss2'] === 'defeated';
 
     CHARACTERS.forEach((char) => {
       const state = Save.getCharacter(char.id);
       
-      // Увеличили высоту карточки до 190
       const bg = this.add.graphics().fillStyle(0xffffff, 0.1).fillRoundedRect(40, y, 640, 190, 20).lineStyle(2, 0xffffff, 0.3).strokeRoundedRect(40, y, 640, 190, 20);
       this.container.add(bg);
 
@@ -78,7 +80,6 @@ export default class ShopScene extends Phaser.Scene {
         this.container.add(this.add.text(150, y + 80, `Броня: ${armorVal}`, { fontSize: '16px', color: '#3498db', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }));
       }
 
-      // РАМКА С ОПИСАНИЕМ
       const descBg = this.add.graphics().fillStyle(0x000000, 0.4).fillRoundedRect(60, y + 110, 380, 65, 10).lineStyle(1, 0xffffff, 0.2).strokeRoundedRect(60, y + 110, 380, 65, 10);
       this.container.add(descBg);
       
@@ -86,7 +87,6 @@ export default class ShopScene extends Phaser.Scene {
           fontSize: '14px', color: '#ddd', wordWrap: { width: 360 }, fontStyle: 'italic' 
       }));
 
-      // КНОПКИ
       if (!state.owned) {
           this.createCharButton(600, y + 95, 'КУПИТЬ', char.price, Save.getFuzz() >= char.price, () => {
               if (Save.spendFuzz(char.price)) { Save.ownCharacter(char.id); this.updateFuzzUI(); this.refreshContent(); }
@@ -110,14 +110,13 @@ export default class ShopScene extends Phaser.Scene {
               this.container.add(btn);
           }
       }
-      y += 210; // Увеличили шаг
+      y += 210; 
     });
   }
 
   createCharButton(x, y, label, cost, canAfford, onClick, baseColor = 0x2ecc71) {
     const btnColor = cost === Infinity ? 0x7f8c8d : (canAfford ? baseColor : 0xe74c3c);
     const btn = this.add.container(x, y);
-    
     const bBg = this.add.graphics().fillStyle(Phaser.Display.Color.IntegerToColor(btnColor).darken(20).color, 1).fillRoundedRect(-80, -20, 160, 45, 12);
     const bMain = this.add.graphics().fillStyle(btnColor, 1).fillRoundedRect(-80, -25, 160, 45, 12);
     
@@ -137,7 +136,7 @@ export default class ShopScene extends Phaser.Scene {
   }
 
   renderBoosts() {
-    let y = 220;
+    let y = 0;
     const medkitPrice = 150;
     const antitoxinPrice = 200;
 
@@ -184,5 +183,50 @@ export default class ShopScene extends Phaser.Scene {
     container.on('pointerdown', () => { container.y += 4; });
     container.on('pointerup', () => { container.y -= 4; onClick(); });
     container.on('pointerout', () => { container.y = y; });
+  }
+
+  setupScroll() {
+    let startY = 0;
+    let startMapY = 0;
+    let isDragging = false;
+    let threshold = 10;
+    let moved = false;
+
+    // Маска, чтобы контент не вылезал за пределы экрана под кнопками
+    const maskShape = this.make.graphics();
+    maskShape.fillRect(0, 180, 720, 1100); 
+    const mask = maskShape.createGeometryMask();
+    this.container.setMask(mask);
+
+    this.input.on('pointerdown', (p) => {
+      // Игнорируем клики по верхней панели, чтобы не мешать кнопке "Назад"
+      if (p.y < 180) return;
+      startY = p.y;
+      startMapY = this.container.y;
+      isDragging = true;
+      moved = false;
+    });
+
+    this.input.on('pointermove', (p) => {
+      if (isDragging) {
+        let diff = p.y - startY;
+        if (Math.abs(diff) > threshold) moved = true;
+        
+        if (moved) {
+          let newY = startMapY + diff;
+          // Высчитываем высоту контента (6 персонажей * 210 = 1260)
+          let contentHeight = this.currentTab === 'characters' ? CHARACTERS.length * 210 : 300;
+          let minScroll = -(contentHeight - 1000); // Высота экрана
+          
+          if (newY > 200) newY = 200; // Не даем скроллить выше шапки
+          if (newY < minScroll) newY = minScroll;
+          this.container.y = newY;
+        }
+      }
+    });
+
+    this.input.on('pointerup', () => {
+      isDragging = false;
+    });
   }
 }
