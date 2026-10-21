@@ -1,5 +1,6 @@
 import { Save } from '../data/save.js';
 import { CHARACTERS, getCharacterMaxHp, getCharacterMaxArmor, getUpgradeCost, getArmorUpgradeCost } from '../data/characters.js';
+import { Effects } from '../utils/effects.js';
 
 export default class ShopScene extends Phaser.Scene {
   constructor() { super({ key: 'ShopScene' }); }
@@ -32,6 +33,7 @@ export default class ShopScene extends Phaser.Scene {
         this.adminClickCount++;
         if (this.adminClickCount >= 5) {
           this.adminClickCount = 0;
+          Effects.click(this);
           this.scene.start('AdminScene');
         }
       }
@@ -40,10 +42,10 @@ export default class ShopScene extends Phaser.Scene {
 
   buildTabs() {
     this.tabCharsBtn = this.add.text(200, 150, 'ПЕРСОНАЖИ', { fontSize: '24px', color: '#fff', backgroundColor: '#2ecc71', padding: { x: 20, y: 10 }, stroke: '#000', strokeThickness: 3 }).setOrigin(0.5).setInteractive();
-    this.tabCharsBtn.on('pointerdown', () => { if (this.currentTab !== 'characters') { this.currentTab = 'characters'; this.adminClickCount = 0; this.refreshContent(); } });
+    this.tabCharsBtn.on('pointerdown', () => { if (this.currentTab !== 'characters') { Effects.click(this); this.currentTab = 'characters'; this.adminClickCount = 0; this.refreshContent(); } });
 
     this.tabBoostsBtn = this.add.text(520, 150, 'ПРЕДМЕТЫ', { fontSize: '24px', color: '#fff', backgroundColor: '#2c3e50', padding: { x: 20, y: 10 }, stroke: '#000', strokeThickness: 3 }).setOrigin(0.5).setInteractive();
-    this.tabBoostsBtn.on('pointerdown', () => { if (this.currentTab !== 'boosts') { this.currentTab = 'boosts'; this.adminClickCount = 0; this.refreshContent(); } });
+    this.tabBoostsBtn.on('pointerdown', () => { if (this.currentTab !== 'boosts') { Effects.click(this); this.currentTab = 'boosts'; this.adminClickCount = 0; this.refreshContent(); } });
   }
 
   updateFuzzUI() { this.fuzzText.setText(`${Save.getFuzz()}`); }
@@ -89,18 +91,40 @@ export default class ShopScene extends Phaser.Scene {
 
       if (!state.owned) {
           this.createCharButton(600, y + 95, 'КУПИТЬ', char.price, Save.getFuzz() >= char.price, () => {
-              if (Save.spendFuzz(char.price)) { Save.ownCharacter(char.id); this.updateFuzzUI(); this.refreshContent(); }
+              if (Save.spendFuzz(char.price)) { 
+                  Effects.buy(this);
+                  Save.ownCharacter(char.id); 
+                  this.updateFuzzUI(); this.refreshContent(); 
+              } else {
+                  Effects.error(this);
+              }
           });
       } else {
           const hpCost = getUpgradeCost(char.id, state.level);
           this.createCharButton(600, y + 50, hpCost === Infinity ? 'HP MAX' : 'УЛУЧШИТЬ ХП', hpCost, hpCost !== Infinity && Save.getFuzz() >= hpCost, () => {
-              if (hpCost !== Infinity && Save.spendFuzz(hpCost)) { Save.upgradeCharacter(char.id); this.updateFuzzUI(); this.refreshContent(); }
+              if (hpCost !== Infinity) {
+                  if (Save.spendFuzz(hpCost)) { 
+                      Effects.buy(this);
+                      Save.upgradeCharacter(char.id); 
+                      this.updateFuzzUI(); this.refreshContent(); 
+                  } else {
+                      Effects.error(this);
+                  }
+              }
           });
 
           if (isArmorUnlocked) {
               const armorCost = getArmorUpgradeCost(char.id, state.armorLevel);
               this.createCharButton(600, y + 130, armorCost === Infinity ? 'БРОНЯ MAX' : 'УЛУЧШИТЬ БР.', armorCost, armorCost !== Infinity && Save.getFuzz() >= armorCost, () => {
-                  if (armorCost !== Infinity && Save.spendFuzz(armorCost)) { Save.upgradeArmor(char.id); this.updateFuzzUI(); this.refreshContent(); }
+                  if (armorCost !== Infinity) {
+                      if (Save.spendFuzz(armorCost)) { 
+                          Effects.buy(this);
+                          Save.upgradeArmor(char.id); 
+                          this.updateFuzzUI(); this.refreshContent(); 
+                      } else {
+                          Effects.error(this);
+                      }
+                  }
               }, 0x3498db);
           } else {
               const btn = this.add.container(600, y + 130);
@@ -134,7 +158,7 @@ export default class ShopScene extends Phaser.Scene {
       btn.on('pointerdown', (p) => { startX = p.x; startY = p.y; });
       btn.on('pointerup', (p) => {
           let dist = Phaser.Math.Distance.Between(startX, startY, p.x, p.y);
-          if (dist < 15) onClick(); // Защита от срабатывания при скролле
+          if (dist < 15) onClick();
       });
     }
     this.container.add(btn);
@@ -150,7 +174,13 @@ export default class ShopScene extends Phaser.Scene {
     this.container.add(this.add.text(110, y + 30, 'Аптечка', { fontSize: '26px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }));
     this.container.add(this.add.text(70, y + 85, `В наличии: x${Save.getMedkits()} | Лечит 200 ХП`, { fontSize: '16px', color: '#2ecc71', fontStyle: 'bold' }));
     this.createItemButton(600, y + 65, medkitPrice, Save.getFuzz() >= medkitPrice, () => {
-        if (Save.spendFuzz(medkitPrice)) { Save.addMedkits(1); this.updateFuzzUI(); this.refreshContent(); }
+        if (Save.spendFuzz(medkitPrice)) { 
+            Effects.buy(this);
+            Save.addMedkits(1); 
+            this.updateFuzzUI(); this.refreshContent(); 
+        } else {
+            Effects.error(this);
+        }
     });
     y += 150;
 
@@ -160,7 +190,13 @@ export default class ShopScene extends Phaser.Scene {
     this.container.add(this.add.text(110, y + 30, 'Антитоксин', { fontSize: '26px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }));
     this.container.add(this.add.text(70, y + 85, `В наличии: x${antiCount} | Лечит 70 ХП (4 хода)`, { fontSize: '16px', color: '#00f0ff', fontStyle: 'bold' }));
     this.createItemButton(600, y + 65, antitoxinPrice, Save.getFuzz() >= antitoxinPrice, () => {
-        if (Save.spendFuzz(antitoxinPrice)) { Save.addAntitoxins(1); this.updateFuzzUI(); this.refreshContent(); }
+        if (Save.spendFuzz(antitoxinPrice)) { 
+            Effects.buy(this);
+            Save.addAntitoxins(1); 
+            this.updateFuzzUI(); this.refreshContent(); 
+        } else {
+            Effects.error(this);
+        }
     });
   }
 
@@ -194,7 +230,7 @@ export default class ShopScene extends Phaser.Scene {
     container.add([shadow, bg, highlight, txt]);
     container.setSize(width, height).setInteractive({ useHandCursor: true });
     container.on('pointerdown', () => { container.y += 4; });
-    container.on('pointerup', () => { container.y -= 4; onClick(); });
+    container.on('pointerup', () => { container.y -= 4; Effects.click(this); onClick(); });
     container.on('pointerout', () => { container.y = y; });
   }
 
@@ -235,8 +271,6 @@ export default class ShopScene extends Phaser.Scene {
       }
     });
 
-    this.input.on('pointerup', () => {
-      isDragging = false;
-    });
+    this.input.on('pointerup', () => { isDragging = false; });
   }
 }
