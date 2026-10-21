@@ -9,37 +9,40 @@ export default class FarmScene extends Phaser.Scene {
     this.score = 0;
     this.targetScore = 1500 + (this.level - 1) * 500; 
     this.movesLeft = 20;
-    
-    this.COLS = 8; this.ROWS = 8; 
-    this.TILE_SIZE = 80;
-    this.GAP = 4;
-    this.OFFSET_X = (720 - this.COLS * this.TILE_SIZE) / 2;
-    this.OFFSET_Y = 350;
   }
 
   create() {
-    this.add.image(360, 640, 'bg').setDisplaySize(720, 1280);
-    this.add.rectangle(360, 640, 720, 1280, 0x1e3799, 0.6);
+    const W = this.scale.width;
+    const H = this.scale.height;
+
+    this.add.image(W/2, H/2, 'bg').setDisplaySize(W, H);
+    this.add.rectangle(W/2, H/2, W, H, 0x1e3799, 0.6);
+
+    this.COLS = 8; this.ROWS = 8; 
+    this.TILE_SIZE = Math.min(80, (W - 40) / this.COLS); // Адаптивный размер плитки
+    this.GAP = 4;
+    this.OFFSET_X = (W - this.COLS * this.TILE_SIZE) / 2;
+    this.OFFSET_Y = H * 0.35;
 
     this.grid = []; this.isBusy = false; this.isGameOver = false;
     this.selectedTile = null; this.pool = [0, 1, 2, 3, 4, 5];
 
-    this.buildHUD();
-    this.createBoard();
+    this.buildHUD(W, H);
+    this.createBoard(W, H);
     this.setupInput();
 
-    this.createCandyButton(100, 50, 140, 50, '←', 0x3498db, () => this.scene.start('HubScene'));
+    this.createCandyButton(W/2, H * 0.9, 300, 70, '←', 0x3498db, () => this.scene.start('HubScene'));
   }
 
-  buildHUD() {
-    this.add.graphics().fillStyle(0xffffff, 0.15).fillRoundedRect(20, 120, 180, 60, 15).lineStyle(3, 0xffffff, 0.5).strokeRoundedRect(20, 120, 180, 60, 15);
-    this.levelText = this.add.text(110, 150, `Уровень ${this.level}`, { fontSize: '22px', color: '#ffffff', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5);
+  buildHUD(W, H) {
+    this.add.graphics().fillStyle(0xffffff, 0.15).fillRoundedRect(20, H * 0.05, 180, 60, 15).lineStyle(3, 0xffffff, 0.5).strokeRoundedRect(20, H * 0.05, 180, 60, 15);
+    this.levelText = this.add.text(110, H * 0.05 + 30, `Уровень ${this.level}`, { fontSize: '22px', color: '#ffffff', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5);
 
-    this.add.graphics().fillStyle(0xffffff, 0.15).fillRoundedRect(520, 120, 180, 60, 15).lineStyle(3, 0xffffff, 0.5).strokeRoundedRect(520, 120, 180, 60, 15);
-    this.movesText = this.add.text(610, 150, `Ходы: ${this.movesLeft}`, { fontSize: '22px', color: '#ffffff', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5);
+    this.add.graphics().fillStyle(0xffffff, 0.15).fillRoundedRect(W - 200, H * 0.05, 180, 60, 15).lineStyle(3, 0xffffff, 0.5).strokeRoundedRect(W - 200, H * 0.05, 180, 60, 15);
+    this.movesText = this.add.text(W - 110, H * 0.05 + 30, `Ходы: ${this.movesLeft}`, { fontSize: '22px', color: '#ffffff', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5);
 
-    this.add.graphics().fillStyle(0xffffff, 0.15).fillRoundedRect(160, 200, 400, 60, 15).lineStyle(3, 0xffcc00, 0.8).strokeRoundedRect(160, 200, 400, 60, 15);
-    this.scoreText = this.add.text(360, 230, `Очки: 0 / ${this.targetScore}`, { fontSize: '24px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5);
+    this.add.graphics().fillStyle(0xffffff, 0.15).fillRoundedRect(W/2 - 200, H * 0.12, 400, 60, 15).lineStyle(3, 0xffcc00, 0.8).strokeRoundedRect(W/2 - 200, H * 0.12, 400, 60, 15);
+    this.scoreText = this.add.text(W/2, H * 0.12 + 30, `Очки: 0 / ${this.targetScore}`, { fontSize: '24px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5);
   }
 
   updateHUD() {
@@ -47,10 +50,10 @@ export default class FarmScene extends Phaser.Scene {
     this.scoreText.setText(`Очки: ${this.score} / ${this.targetScore}`);
   }
 
-  createBoard() {
-    const boardW = this.COLS * this.TILE_SIZE + 20;
-    const boardH = this.ROWS * this.TILE_SIZE + 20;
-    this.add.graphics().fillStyle(0x2c3e50, 0.9).fillRoundedRect(this.OFFSET_X - 10, this.OFFSET_Y - 10, boardW, boardH, 25).lineStyle(4, 0x3498db, 1).strokeRoundedRect(this.OFFSET_X - 10, this.OFFSET_Y - 10, boardW, boardH, 25);
+  createBoard(W, H) {
+    const boardW = this.COLS * this.TILE_SIZE;
+    const boardH = this.ROWS * this.TILE_SIZE;
+    this.add.graphics().fillStyle(0x2c3e50, 0.9).fillRoundedRect(this.OFFSET_X - 10, this.OFFSET_Y - 10, boardW + 20, boardH + 20, 25).lineStyle(4, 0x3498db, 1).strokeRoundedRect(this.OFFSET_X - 10, this.OFFSET_Y - 10, boardW + 20, boardH + 20, 25);
 
     for (let row = 0; row < this.ROWS; row++) {
       this.grid[row] = [];
@@ -216,18 +219,21 @@ export default class FarmScene extends Phaser.Scene {
   }
 
   checkLevelStatus() {
+    const W = this.scale.width;
+    const H = this.scale.height;
+
     if (this.score >= this.targetScore) {
       this.isGameOver = true;
       Effects.win(this);
       Save.addFuzz(30); 
-      this.add.rectangle(360, 640, 720, 1280, 0x000000, 0.85).setDepth(100);
-      this.add.graphics().setDepth(101).fillStyle(0x2c3e50, 0.95).fillRoundedRect(160, 440, 400, 400, 30).lineStyle(4, 0x2ecc71, 1).strokeRoundedRect(160, 440, 400, 400, 30);
+      this.add.rectangle(W/2, H/2, W, H, 0x000000, 0.85).setDepth(100);
+      this.add.graphics().setDepth(101).fillStyle(0x2c3e50, 0.95).fillRoundedRect(W/2 - 200, H/2 - 200, 400, 400, 30).lineStyle(4, 0x2ecc71, 1).strokeRoundedRect(W/2 - 200, H/2 - 200, 400, 400, 30);
       
-      this.add.text(360, 520, 'УРОВЕНЬ ПРОЙДЕН!', { fontSize: '36px', color: '#2ecc71', fontStyle: 'bold', stroke: '#000', strokeThickness: 5 }).setOrigin(0.5).setDepth(102);
-      this.add.image(330, 590, 'icon_fuz').setDisplaySize(40, 40).setDepth(102);
-      this.add.text(370, 590, `+30`, { fontSize: '28px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 4 }).setOrigin(0, 0.5).setDepth(102);
+      this.add.text(W/2, H/2 - 120, 'УРОВЕНЬ ПРОЙДЕН!', { fontSize: '36px', color: '#2ecc71', fontStyle: 'bold', stroke: '#000', strokeThickness: 5 }).setOrigin(0.5).setDepth(102);
+      this.add.image(W/2 - 40, H/2 - 50, 'icon_fuz').setDisplaySize(40, 40).setDepth(102);
+      this.add.text(W/2 + 10, H/2 - 50, `+30`, { fontSize: '28px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 4 }).setOrigin(0, 0.5).setDepth(102);
 
-      const btn = this.add.container(360, 720).setDepth(102);
+      const btn = this.add.container(W/2, H/2 + 80).setDepth(102);
       const bg = this.add.graphics().fillStyle(0x2ecc71, 1).fillRoundedRect(-150, -40, 300, 80, 30).lineStyle(6, 0xffffff, 1).strokeRoundedRect(-150, -40, 300, 80, 30);
       btn.add([bg, this.add.text(0, 0, 'ДАЛЬШЕ', { fontSize: '36px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 5 }).setOrigin(0.5)]);
       btn.setSize(300, 80).setInteractive();
@@ -236,19 +242,19 @@ export default class FarmScene extends Phaser.Scene {
     } else if (this.movesLeft <= 0) {
       this.isGameOver = true;
       Effects.lose(this);
-      this.add.rectangle(360, 640, 720, 1280, 0x000000, 0.85).setDepth(100);
-      this.add.graphics().setDepth(101).fillStyle(0x2c3e50, 0.95).fillRoundedRect(160, 440, 400, 400, 30).lineStyle(4, 0xe74c3c, 1).strokeRoundedRect(160, 440, 400, 400, 30);
+      this.add.rectangle(W/2, H/2, W, H, 0x000000, 0.85).setDepth(100);
+      this.add.graphics().setDepth(101).fillStyle(0x2c3e50, 0.95).fillRoundedRect(W/2 - 200, H/2 - 200, 400, 400, 30).lineStyle(4, 0xe74c3c, 1).strokeRoundedRect(W/2 - 200, H/2 - 200, 400, 400, 30);
       
-      this.add.text(360, 520, 'НЕ ХВАТИЛО ОЧКОВ', { fontSize: '36px', color: '#e74c3c', fontStyle: 'bold', stroke: '#000', strokeThickness: 5 }).setOrigin(0.5).setDepth(102);
-      this.add.text(360, 590, `Собрано: ${this.score} / ${this.targetScore}`, { fontSize: '24px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5).setDepth(102);
+      this.add.text(W/2, H/2 - 120, 'НЕ ХВАТИЛО ОЧКОВ', { fontSize: '36px', color: '#e74c3c', fontStyle: 'bold', stroke: '#000', strokeThickness: 5 }).setOrigin(0.5).setDepth(102);
+      this.add.text(W/2, H/2 - 50, `Собрано: ${this.score} / ${this.targetScore}`, { fontSize: '24px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5).setDepth(102);
 
-      const btnTry = this.add.container(360, 700).setDepth(102);
+      const btnTry = this.add.container(W/2, H/2 + 50).setDepth(102);
       const bgTry = this.add.graphics().fillStyle(0x3498db, 1).fillRoundedRect(-120, -35, 240, 70, 25).lineStyle(4, 0xffffff, 1).strokeRoundedRect(-120, -35, 240, 70, 25);
       btnTry.add([bgTry, this.add.text(0, 0, 'ЗАНОВО', { fontSize: '32px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5)]);
       btnTry.setSize(240, 70).setInteractive();
       btnTry.on('pointerup', () => { Effects.click(this); this.time.delayedCall(100, () => this.scene.restart({ level: this.level })); });
 
-      const btnMenu = this.add.container(360, 800).setDepth(102);
+      const btnMenu = this.add.container(W/2, H/2 + 150).setDepth(102);
       const bgMenu = this.add.graphics().fillStyle(0x2c3e50, 1).fillRoundedRect(-120, -35, 240, 70, 25).lineStyle(4, 0xffffff, 1).strokeRoundedRect(-120, -35, 240, 70, 25);
       btnMenu.add([bgMenu, this.add.text(0, 0, 'В МЕНЮ', { fontSize: '32px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5)]);
       btnMenu.setSize(240, 70).setInteractive();
