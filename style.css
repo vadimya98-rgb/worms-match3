@@ -18,14 +18,19 @@ body {
     padding: 0; 
     color: white; 
     width: 100vw;
-    /* 100dvh - это "динамическая" высота, она убирает полосы браузера на мобилках */
     height: 100dvh; 
     overflow: hidden; 
     display: flex; 
     flex-direction: column; 
     
-    /* Заливаем полосы твоим фоном */
-    background-image: url('assets/bg.jpg'); 
+    /* 
+       ВОТ ТУТ МАГИЯ: 
+       Мы накладываем градиент (тёмно-синий, как в игре) поверх картинки.
+       rgba(30, 55, 153, 0.6) - это тот же цвет 0x1e3799 и прозрачность 0.6, что и в коде Phaser.
+    */
+    background-image: 
+        linear-gradient(rgba(30, 55, 153, 0.6), rgba(30, 55, 153, 0.6)),
+        url('assets/bg.jpg'); 
     background-size: cover; 
     background-position: center; 
     background-repeat: no-repeat; 
