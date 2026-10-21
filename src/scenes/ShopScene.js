@@ -10,12 +10,12 @@ export default class ShopScene extends Phaser.Scene {
     this.add.rectangle(360, 640, 720, 1280, 0x1e3799, 0.6);
 
     this.currentTab = 'characters';
-    this.container = this.add.container(0, 0);
+    this.container = this.add.container(0, 200); // Начальная позиция
     this.adminClickCount = 0;
     
     this.buildHeader();
     this.buildTabs();
-    this.refreshContent();
+    this.refreshContent(true);
     this.setupScroll();
   }
 
@@ -42,23 +42,41 @@ export default class ShopScene extends Phaser.Scene {
 
   buildTabs() {
     this.tabCharsBtn = this.add.text(200, 150, 'ПЕРСОНАЖИ', { fontSize: '24px', color: '#fff', backgroundColor: '#2ecc71', padding: { x: 20, y: 10 }, stroke: '#000', strokeThickness: 3 }).setOrigin(0.5).setInteractive();
-    this.tabCharsBtn.on('pointerdown', () => { if (this.currentTab !== 'characters') { Effects.click(this); this.currentTab = 'characters'; this.adminClickCount = 0; this.refreshContent(); } });
+    this.tabCharsBtn.on('pointerdown', () => { 
+        if (this.currentTab !== 'characters') { 
+            Effects.click(this); 
+            this.currentTab = 'characters'; 
+            this.adminClickCount = 0; 
+            this.refreshContent(true); // true = сбросить скролл при смене вкладки
+        } 
+    });
 
     this.tabBoostsBtn = this.add.text(520, 150, 'ПРЕДМЕТЫ', { fontSize: '24px', color: '#fff', backgroundColor: '#2c3e50', padding: { x: 20, y: 10 }, stroke: '#000', strokeThickness: 3 }).setOrigin(0.5).setInteractive();
-    this.tabBoostsBtn.on('pointerdown', () => { if (this.currentTab !== 'boosts') { Effects.click(this); this.currentTab = 'boosts'; this.adminClickCount = 0; this.refreshContent(); } });
+    this.tabBoostsBtn.on('pointerdown', () => { 
+        if (this.currentTab !== 'boosts') { 
+            Effects.click(this); 
+            this.currentTab = 'boosts'; 
+            this.adminClickCount = 0; 
+            this.refreshContent(true); // true = сбросить скролл при смене вкладки
+        } 
+    });
   }
 
   updateFuzzUI() { this.fuzzText.setText(`${Save.getFuzz()}`); }
 
-  refreshContent() {
+  // ИСПРАВЛЕНИЕ: Теперь функция может сохранять позицию скролла
+  refreshContent(resetScroll = false) {
+    let savedY = resetScroll ? 200 : this.container.y; // Сохраняем текущий Y (или сбрасываем, если просили)
+    
     this.container.removeAll(true);
-    this.container.y = 200; 
     
     this.tabCharsBtn.setBackgroundColor(this.currentTab === 'characters' ? '#2ecc71' : '#2c3e50');
     this.tabBoostsBtn.setBackgroundColor(this.currentTab === 'boosts' ? '#2ecc71' : '#2c3e50');
 
     if (this.currentTab === 'characters') this.renderCharacters();
     else this.renderBoosts();
+
+    this.container.y = savedY; // Восстанавливаем позицию
   }
 
   renderCharacters() {
@@ -94,7 +112,7 @@ export default class ShopScene extends Phaser.Scene {
               if (Save.spendFuzz(char.price)) { 
                   Effects.buy(this);
                   Save.ownCharacter(char.id); 
-                  this.updateFuzzUI(); this.refreshContent(); 
+                  this.updateFuzzUI(); this.refreshContent(); // Без true, чтобы сохранить скролл
               } else {
                   Effects.error(this);
               }
@@ -106,7 +124,7 @@ export default class ShopScene extends Phaser.Scene {
                   if (Save.spendFuzz(hpCost)) { 
                       Effects.buy(this);
                       Save.upgradeCharacter(char.id); 
-                      this.updateFuzzUI(); this.refreshContent(); 
+                      this.updateFuzzUI(); this.refreshContent(); // Без true
                   } else {
                       Effects.error(this);
                   }
@@ -120,7 +138,7 @@ export default class ShopScene extends Phaser.Scene {
                       if (Save.spendFuzz(armorCost)) { 
                           Effects.buy(this);
                           Save.upgradeArmor(char.id); 
-                          this.updateFuzzUI(); this.refreshContent(); 
+                          this.updateFuzzUI(); this.refreshContent(); // Без true
                       } else {
                           Effects.error(this);
                       }
@@ -177,7 +195,7 @@ export default class ShopScene extends Phaser.Scene {
         if (Save.spendFuzz(medkitPrice)) { 
             Effects.buy(this);
             Save.addMedkits(1); 
-            this.updateFuzzUI(); this.refreshContent(); 
+            this.updateFuzzUI(); this.refreshContent(); // Без true
         } else {
             Effects.error(this);
         }
@@ -193,7 +211,7 @@ export default class ShopScene extends Phaser.Scene {
         if (Save.spendFuzz(antitoxinPrice)) { 
             Effects.buy(this);
             Save.addAntitoxins(1); 
-            this.updateFuzzUI(); this.refreshContent(); 
+            this.updateFuzzUI(); this.refreshContent(); // Без true
         } else {
             Effects.error(this);
         }
