@@ -10,18 +10,16 @@ import BossDetailScene from './scenes/BossDetailScene.js';
 import BossBattleScene from './scenes/BossBattleScene.js';
 import DailyBonusScene from './scenes/DailyBonusScene.js';
 import AdminScene from './scenes/AdminScene.js';
+import { GAME_WIDTH, GAME_HEIGHT } from './config.js'; // Импортируем размеры
 
 const config = {
   type: Phaser.AUTO,
-  // ВОЗВРАЩАЕМ 1280, чтобы кнопки не съезжали
-  width: 720,
-  height: 1280,
-  // ДЕЛАЕМ ФОН ПРОЗРАЧНЫМ (чтобы видеть CSS-фон)
-  transparent: true, 
+  width: GAME_WIDTH,
+  height: GAME_HEIGHT, // Высота теперь динамическая!
+  transparent: true, // Фон прозрачный (виден CSS фон)
   parent: 'game',
   
   scale: {
-    // FIT вписывает игру целиком, ничего не обрезая
     mode: Phaser.Scale.FIT, 
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
