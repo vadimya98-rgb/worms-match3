@@ -13,15 +13,16 @@ import AdminScene from './scenes/AdminScene.js';
 
 const config = {
   type: Phaser.AUTO,
-  // ДЕЛАЕМ ХОЛСТ ВЫТЯНУТЫМ (720x1600), как экран телефона
+  // ВОЗВРАЩАЕМ 1280, чтобы кнопки не съезжали
   width: 720,
-  height: 1600, 
-  backgroundColor: '#1a1a2e',
+  height: 1280,
+  // ДЕЛАЕМ ФОН ПРОЗРАЧНЫМ (чтобы видеть CSS-фон)
+  transparent: true, 
   parent: 'game',
   
   scale: {
-    // ENVELOP заполнит экран без черных полос
-    mode: Phaser.Scale.ENVELOP, 
+    // FIT вписывает игру целиком, ничего не обрезая
+    mode: Phaser.Scale.FIT, 
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
 
