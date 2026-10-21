@@ -7,21 +7,17 @@
 html, body {
   width: 100%;
   height: 100%;
-  margin: 0;
-  padding: 0;
   overflow: hidden;
-  background-color: #1a1a2e; 
+  
+  /* Заливаем весь экран твоим фоновым изображением */
+  background: url('assets/bg.jpg') no-repeat center center;
+  background-size: cover; /* Растягивает картинку на весь экран, обрезая лишнее по краям */
+  background-color: #1a1a2e; /* Запасной цвет, если картинка не прогрузится */
+  
   -webkit-user-select: none;
   user-select: none;
   -webkit-touch-callout: none;
   touch-action: none; 
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-html::-webkit-scrollbar, 
-body::-webkit-scrollbar {
-  display: none;
 }
 
 #game {
@@ -30,14 +26,10 @@ body::-webkit-scrollbar {
   display: flex;
   justify-content: center;
   align-items: center;
-  overflow: hidden;
-  position: relative;
 }
 
 canvas {
   display: block;
-  margin: 0;
-  padding: 0;
   touch-action: none;
   outline: none;
 }
