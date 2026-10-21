@@ -60,7 +60,7 @@ export default class ShopScene extends Phaser.Scene {
   }
 
   renderCharacters() {
-    let y = 0; // Координаты внутри контейнера
+    let y = 0; 
     const isArmorUnlocked = Save.data.bosses['boss2'] === 'defeated';
 
     CHARACTERS.forEach((char) => {
@@ -130,7 +130,12 @@ export default class ShopScene extends Phaser.Scene {
     btn.setSize(160, 45);
     if (canAfford && cost !== Infinity) {
       btn.setInteractive({ useHandCursor: true });
-      btn.on('pointerdown', onClick);
+      let startX = 0, startY = 0;
+      btn.on('pointerdown', (p) => { startX = p.x; startY = p.y; });
+      btn.on('pointerup', (p) => {
+          // Проверка на сдвиг (скролл)
+          if (Math.abs(p.x - startX) < 10 && Math.abs(p.y - startY) < 10) onClick();
+      });
     }
     this.container.add(btn);
   }
@@ -168,7 +173,14 @@ export default class ShopScene extends Phaser.Scene {
     btn.add(this.add.image(-15, 10, 'icon_fuz').setDisplaySize(18, 18));
     btn.add(this.add.text(10, 10, `${price}`, { fontSize: '16px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 2 }).setOrigin(0.5));
     btn.setSize(140, 60);
-    if (canAfford) btn.setInteractive({ useHandCursor: true }).on('pointerdown', onClick);
+    if (canAfford) {
+        btn.setInteractive({ useHandCursor: true });
+        let startX = 0, startY = 0;
+        btn.on('pointerdown', (p) => { startX = p.x; startY = p.y; });
+        btn.on('pointerup', (p) => {
+            if (Math.abs(p.x - startX) < 10 && Math.abs(p.y - startY) < 10) onClick();
+        });
+    }
     this.container.add(btn);
   }
 
@@ -192,14 +204,12 @@ export default class ShopScene extends Phaser.Scene {
     let threshold = 10;
     let moved = false;
 
-    // Маска, чтобы контент не вылезал за пределы экрана под кнопками
     const maskShape = this.make.graphics();
     maskShape.fillRect(0, 180, 720, 1100); 
     const mask = maskShape.createGeometryMask();
     this.container.setMask(mask);
 
     this.input.on('pointerdown', (p) => {
-      // Игнорируем клики по верхней панели, чтобы не мешать кнопке "Назад"
       if (p.y < 180) return;
       startY = p.y;
       startMapY = this.container.y;
@@ -214,11 +224,10 @@ export default class ShopScene extends Phaser.Scene {
         
         if (moved) {
           let newY = startMapY + diff;
-          // Высчитываем высоту контента (6 персонажей * 210 = 1260)
           let contentHeight = this.currentTab === 'characters' ? CHARACTERS.length * 210 : 300;
-          let minScroll = -(contentHeight - 1000); // Высота экрана
+          let minScroll = -(contentHeight - 1000); 
           
-          if (newY > 200) newY = 200; // Не даем скроллить выше шапки
+          if (newY > 200) newY = 200; 
           if (newY < minScroll) newY = minScroll;
           this.container.y = newY;
         }
