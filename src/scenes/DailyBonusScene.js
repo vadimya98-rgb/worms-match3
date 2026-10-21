@@ -1,4 +1,5 @@
 import { Save } from '../data/save.js';
+import { Effects } from '../utils/effects.js';
 
 export default class DailyBonusScene extends Phaser.Scene {
   constructor() { super({ key: 'DailyBonusScene' }); }
@@ -36,7 +37,7 @@ export default class DailyBonusScene extends Phaser.Scene {
       { type: 'medkit', amount: 2, icon: 'icon_medkit', text: 'x2' },
       { type: 'fuzz', amount: 500, icon: 'icon_fuz', text: '500' }, 
       { type: 'medkit', amount: 3, icon: 'icon_medkit', text: 'x3' },
-      { type: 'fuzz', amount: 1500, icon: 'icon_fuz', text: '1500!' }
+      { type: 'fuzz', amount: 1500, icon: 'icon_fuz', text: '1500' }
     ];
 
     const startY = 240, spacingY = 130;
@@ -56,9 +57,8 @@ export default class DailyBonusScene extends Phaser.Scene {
 
       this.add.text(x, y + 25, `День ${day}`, { fontSize: '20px', color: '#ffffff', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5);
       
-      // ИСПРАВЛЕН ТЕКСТ 7 ДНЯ
       if (isLast) {
-          this.add.image(x - 80, y + 65, reward.icon).setDisplaySize(35, 35);
+          this.add.image(x - 70, y + 65, reward.icon).setDisplaySize(35, 35);
           this.add.text(x + 30, y + 65, reward.text, { fontSize: '28px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5);
       } else {
           this.add.image(x - 30, y + 65, reward.icon).setDisplaySize(30, 30);
@@ -71,6 +71,7 @@ export default class DailyBonusScene extends Phaser.Scene {
   }
 
   claimReward(reward) {
+    Effects.buy(this);
     if (reward.type === 'fuzz') Save.addFuzz(reward.amount);
     else if (reward.type === 'medkit') Save.addMedkits(reward.amount);
     Save.data.player.lastDailyBonusDay = this.todayDate; Save.data.player.dailyStreak = this.currentRewardDay; Save.flush();
@@ -84,6 +85,11 @@ export default class DailyBonusScene extends Phaser.Scene {
     const highlight = this.add.graphics().fillStyle(0xffffff, 0.3).fillRoundedRect(-width/2 + 5, -height/2 + 5, width - 10, height / 2, 15);
     const txt = this.add.text(0, 0, text, { fontSize: '28px', color: '#ffffff', fontStyle: 'bold', stroke: '#000000', strokeThickness: 5 }).setOrigin(0.5);
     container.add([shadow, bg, highlight, txt]); container.setSize(width, height);
-    if (onClick) { container.setInteractive({ useHandCursor: true }); container.on('pointerdown', () => { container.y += 5; }); container.on('pointerup', () => { container.y -= 5; onClick(); }); container.on('pointerout', () => { container.y = y; }); }
+    if (onClick) { 
+        container.setInteractive({ useHandCursor: true }); 
+        container.on('pointerdown', () => { container.y += 5; }); 
+        container.on('pointerup', () => { container.y -= 5; Effects.click(this); onClick(); }); 
+        container.on('pointerout', () => { container.y = y; }); 
+    }
   }
 }
