@@ -1,7 +1,10 @@
 name: Build Android APK
 
+# ЗДЕСЬ МЫ ВКЛЮЧАЕМ АВТОЗАПУСК
 on:
-  workflow_dispatch:
+  push:
+    branches: [ main ]    # Запускать при каждом коммите в main
+  workflow_dispatch:      # Оставить возможность запустить вручную
 
 jobs:
   build:
