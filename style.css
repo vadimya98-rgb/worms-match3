@@ -1,4 +1,3 @@
-/* Убираем отступы браузера по умолчанию */
 * {
   margin: 0;
   padding: 0;
@@ -8,11 +7,21 @@
 html, body {
   width: 100%;
   height: 100%;
-  overflow: hidden; /* Запрещаем прокрутку страницы */
-  background: #1a1a2e; /* Темный фон */
-  -webkit-user-select: none; /* Убираем выделение текста при тапе */
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background-color: #1a1a2e; 
+  -webkit-user-select: none;
   user-select: none;
-  -webkit-touch-callout: none; /* Убираем меню по долгому нажатию */
+  -webkit-touch-callout: none;
+  touch-action: none; 
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+html::-webkit-scrollbar, 
+body::-webkit-scrollbar {
+  display: none;
 }
 
 #game {
@@ -21,9 +30,14 @@ html, body {
   display: flex;
   justify-content: center;
   align-items: center;
+  overflow: hidden;
+  position: relative;
 }
 
 canvas {
   display: block;
-  touch-action: none; /* Отключаем зум браузера поверх игры */
+  margin: 0;
+  padding: 0;
+  touch-action: none;
+  outline: none;
 }
