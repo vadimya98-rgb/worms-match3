@@ -18,16 +18,12 @@ body {
     padding: 0; 
     color: white; 
     width: 100vw;
-    height: 100dvh; 
+    height: 100dvh; /* Динамическая высота для мобильных браузеров */
     overflow: hidden; 
     display: flex; 
     flex-direction: column; 
     
-    /* 
-       ВОТ ТУТ МАГИЯ: 
-       Мы накладываем градиент (тёмно-синий, как в игре) поверх картинки.
-       rgba(30, 55, 153, 0.6) - это тот же цвет 0x1e3799 и прозрачность 0.6, что и в коде Phaser.
-    */
+    /* Накладываем тот же синий фильтр (0x1e3799, 0.6) поверх фона, что и в Phaser */
     background-image: 
         linear-gradient(rgba(30, 55, 153, 0.6), rgba(30, 55, 153, 0.6)),
         url('assets/bg.jpg'); 
