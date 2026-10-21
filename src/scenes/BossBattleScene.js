@@ -76,6 +76,11 @@ export default class BossBattleScene extends Phaser.Scene {
 
     this.W = this.scale.width;
     this.H = this.scale.height;
+    
+    // НИЗ РАМКИ (общая точка для полоски и текста)
+    this.barBottomY = this.H * 0.22 + 70;
+    // ВЕРХ РАМКИ
+    this.barTopY = this.barBottomY - 140;
 
     this.add.image(this.W/2, this.H/2, 'bg').setDisplaySize(this.W, this.H);
     this.add.rectangle(this.W/2, this.H/2, this.W, this.H, 0x1e3799, 0.6);
@@ -105,20 +110,22 @@ export default class BossBattleScene extends Phaser.Scene {
     this.podiumGraphics = this.add.graphics();
     this.drawPodium();
 
-    // Вертикальные полоски ХП и Брони привязаны к боссу
-    this.add.rectangle(this.W * 0.25, this.H * 0.22, 24, 140, 0x333333).setStrokeStyle(2, 0xffffff);
+    // РАМКА ХП (по центру, с высотой 140, центр в barBottomY - 70)
+    const frameCenterY = this.barBottomY - 70;
+    this.add.rectangle(this.W * 0.25, frameCenterY, 24, 140, 0x333333).setStrokeStyle(2, 0xffffff);
     this.bossHpBar = this.add.graphics();
-    this.bossHpText = this.add.text(this.W * 0.25, this.H * 0.3, `${this.bossHp}`, { fontSize: '16px', color: '#ffffff', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5, 0);
+    // ТЕКСТ ПОД РАМКОЙ
+    this.bossHpText = this.add.text(this.W * 0.25, this.barBottomY + 10, `${this.bossHp}`, { fontSize: '16px', color: '#ffffff', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5, 0);
 
     if (this.bossArmor > 0) {
-        this.add.rectangle(this.W * 0.75, this.H * 0.22, 16, 140, 0x333333).setStrokeStyle(2, 0xaaaaaa);
+        this.add.rectangle(this.W * 0.75, frameCenterY, 16, 140, 0x333333).setStrokeStyle(2, 0xaaaaaa);
         this.bossArmorBar = this.add.graphics();
-        this.bossArmorText = this.add.text(this.W * 0.75, this.H * 0.3, `${this.bossArmor}`, { fontSize: '14px', color: '#33ccff', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5, 0);
+        this.bossArmorText = this.add.text(this.W * 0.75, this.barBottomY + 10, `${this.bossArmor}`, { fontSize: '14px', color: '#33ccff', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5, 0);
     }
 
     this.updateBossHpUI();
 
-    this.debuffText = this.add.text(this.W/2, this.H * 0.31, '', { fontSize: '16px', color: '#e74c3c', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5);
+    this.debuffText = this.add.text(this.W/2, this.barBottomY + 30, '', { fontSize: '16px', color: '#e74c3c', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5);
 
     this.charContainers = [];
     this.renderTeamUI();
@@ -139,16 +146,15 @@ export default class BossBattleScene extends Phaser.Scene {
 
   drawPodium() {
     this.podiumGraphics.clear();
-    this.podiumGraphics.fillStyle(0x333333, 1).fillRoundedRect(this.W/2 - 150, this.H * 0.22 + 70, 300, 40, 10);
-    this.podiumGraphics.fillStyle(0x555555, 1).fillRoundedRect(this.W/2 - 160, this.H * 0.22 + 60, 320, 15, 10);
+    this.podiumGraphics.fillStyle(0x333333, 1).fillRoundedRect(this.W/2 - 150, this.barBottomY, 300, 40, 10);
+    this.podiumGraphics.fillStyle(0x555555, 1).fillRoundedRect(this.W/2 - 160, this.barBottomY - 10, 320, 15, 10);
     const hpPct = this.bossHp / this.bossData.maxHp;
     this.podiumGraphics.lineStyle(4, 0x000000, 1);
     
-    // Трещины (слегка адаптированы под новые координаты)
-    if (hpPct < 0.75) this.podiumGraphics.beginPath().moveTo(this.W/2 - 80, this.H * 0.22 + 65).lineTo(this.W/2 - 50, this.H * 0.22 + 85).lineTo(this.W/2 - 70, this.H * 0.22 + 110).strokePath();
+    if (hpPct < 0.75) this.podiumGraphics.beginPath().moveTo(this.W/2 - 80, this.barBottomY - 5).lineTo(this.W/2 - 50, this.barBottomY + 15).lineTo(this.W/2 - 70, this.barBottomY + 40).strokePath();
     if (hpPct < 0.5) {
-      this.podiumGraphics.beginPath().moveTo(this.W/2 + 90, this.H * 0.22 + 65).lineTo(this.W/2 + 60, this.H * 0.22 + 90).lineTo(this.W/2 + 90, this.H * 0.22 + 110).strokePath();
-      this.podiumGraphics.fillStyle(0x222222, 1).fillTriangle(this.W/2 - 50, this.H * 0.22 + 90, this.W/2 - 30, this.H * 0.22 + 110, this.W/2 - 60, this.H * 0.22 + 110);
+      this.podiumGraphics.beginPath().moveTo(this.W/2 + 90, this.barBottomY - 5).lineTo(this.W/2 + 60, this.barBottomY + 20).lineTo(this.W/2 + 90, this.barBottomY + 40).strokePath();
+      this.podiumGraphics.fillStyle(0x222222, 1).fillTriangle(this.W/2 - 50, this.barBottomY + 20, this.W/2 - 30, this.barBottomY + 40, this.W/2 - 60, this.barBottomY + 40);
     }
   }
 
@@ -159,7 +165,7 @@ export default class BossBattleScene extends Phaser.Scene {
     this.team.forEach((char, index) => {
       const isActive = (index === this.activeCharIndex);
       const x = isActive ? this.W/2 : this.W * 0.8; 
-      const y = this.H * 0.8; // Привязали персонажей к 80% высоты
+      const y = this.H * 0.8; 
       
       const bgCircle = this.add.graphics().fillStyle(0x2c3e50, 0.9).fillCircle(x, y, 65);
       let neonColor = isActive ? 0x2ecc71 : 0x555555;
@@ -211,7 +217,7 @@ export default class BossBattleScene extends Phaser.Scene {
     const boardW = this.COLS * this.TILE_SIZE;
     const boardH = this.ROWS * this.TILE_SIZE;
     this.OFFSET_X = (this.W - boardW) / 2;
-    this.OFFSET_Y = this.H * 0.36; // Сетка начинается чуть ниже середины
+    this.OFFSET_Y = this.H * 0.36;
 
     this.add.graphics().fillStyle(0x2c3e50, 0.9).fillRoundedRect(this.OFFSET_X - 10, this.OFFSET_Y - 10, boardW + 20, boardH + 20, 25).lineStyle(4, 0x3498db, 1).strokeRoundedRect(this.OFFSET_X - 10, this.OFFSET_Y - 10, boardW + 20, boardH + 20, 25);
 
@@ -455,7 +461,6 @@ export default class BossBattleScene extends Phaser.Scene {
   shootProjectile(wId, sx, sy, tx, ty, onComplete) {
     Effects.shoot(this); 
     let proj;
-    // Дальше логика выстрелов (осталась без изменений, так как она использует координаты фишек и босса)
     if (wId === 0) { 
       proj = this.add.image(sx, sy, 'weapon0').setDisplaySize(40, 40).setDepth(150);
       this.tweens.addCounter({ from: 0, to: 1, duration: 2000, ease: 'Linear', onUpdate: (tw) => { let t = tw.getValue(); let radius = 150 * (1 - t); proj.x = Phaser.Math.Linear(sx, tx, t) + Math.sin(t * Math.PI * 10) * radius; proj.y = Phaser.Math.Linear(sy, ty, t) + Math.cos(t * Math.PI * 10) * radius; proj.angle += 10; }, onComplete: () => { proj.destroy(); onComplete(); } });
@@ -723,14 +728,16 @@ export default class BossBattleScene extends Phaser.Scene {
     });
   }
 
+  // ИСПРАВЛЕНИЕ: Полоска привязана к бару (barBottomY), а не к this.H * 0.3
   updateBossHpUI() {
     const pct = Math.max(0, this.bossHp / this.bossData.maxHp);
     let color = 0x2ecc71; if (pct < 0.6) color = 0xf1c40f; if (pct < 0.3) color = 0xe74c3c;
     
     this.bossHpBar.clear();
     if (pct > 0) {
-        this.bossHpBar.fillStyle(color, 1).fillRoundedRect(this.W * 0.25 - 10, this.H * 0.3 - (136 * pct), 20, 136 * pct, 6);
-        this.bossHpBar.fillStyle(0xffffff, 0.4).fillRoundedRect(this.W * 0.25 - 10, this.H * 0.3 - (136 * pct), 8, 136 * pct, 4); 
+        // Низ полоски = barBottomY. Высота = 136 * pct. Идем вверх от низа.
+        this.bossHpBar.fillStyle(color, 1).fillRoundedRect(this.W * 0.25 - 10, this.barBottomY - (136 * pct), 20, 136 * pct, 6);
+        this.bossHpBar.fillStyle(0xffffff, 0.4).fillRoundedRect(this.W * 0.25 - 10, this.barBottomY - (136 * pct), 8, 136 * pct, 4); 
     }
     this.bossHpText.setText(`${this.bossHp}`);
 
@@ -738,7 +745,7 @@ export default class BossBattleScene extends Phaser.Scene {
         const armorPct = Math.max(0, this.bossArmor / this.bossData.armor);
         this.bossArmorBar.clear();
         if (armorPct > 0) {
-            this.bossArmorBar.fillStyle(0x3399db, 1).fillRoundedRect(this.W * 0.75 - 6, this.H * 0.3 - (136 * armorPct), 12, 136 * armorPct, 4);
+            this.bossArmorBar.fillStyle(0x3399db, 1).fillRoundedRect(this.W * 0.75 - 6, this.barBottomY - (136 * armorPct), 12, 136 * armorPct, 4);
         }
         this.bossArmorText.setText(`${this.bossArmor}`);
     }
