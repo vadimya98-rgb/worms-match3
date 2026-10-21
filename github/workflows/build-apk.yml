@@ -1,0 +1,73 @@
+name: Build Android APK
+
+on:
+  # Запускается вручную по кнопке
+  workflow_dispatch:
+  # И автоматически, если ты создашь тег (например, v1.0)
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout репозитория
+        uses: actions/checkout@v4
+
+      - name: Установить Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Установить Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Установить зависимости
+        run: npm install
+
+      - name: Скачать Phaser локально
+        # В APK нет интернета, поэтому CDN не загрузится. Кладем phaser.min.js прямо в проект.
+        run: |
+          mkdir -p libs
+          curl -L -o libs/phaser.min.js https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js
+
+      - name: Собрать www/ из исходников
+        # Capacitor требует отдельную папку с веб-ресурсами.
+        # Копируем игру и заменяем CDN-ссылку на локальную.
+        run: |
+          mkdir -p www
+          cp -r index.html style.css src assets libs www/
+          sed -i 's|https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js|libs/phaser.min.js|' www/index.html
+
+      - name: Создать Android-проект
+        run: npx cap add android
+
+      - name: Сгенерировать иконки из папки resources
+        # Берет твою иконку и делает из нее все размеры для Android
+        run: |
+          npx @capacitor/assets generate --android \
+            --iconBackgroundColor '#1a1a2e' \
+            --iconBackgroundColorDark '#1a1a2e' \
+            --splashBackgroundColor '#1a1a2e' \
+            --splashBackgroundColorDark '#1a1a2e'
+
+      - name: Синхронизировать веб-файлы с Android
+        run: npx cap sync android
+
+      - name: Собрать APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Загрузить APK как артефакт
+        uses: actions/upload-artifact@v4
+        with:
+          name: wormiks-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
