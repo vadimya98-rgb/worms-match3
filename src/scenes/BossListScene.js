@@ -6,28 +6,31 @@ export default class BossListScene extends Phaser.Scene {
   constructor() { super({ key: 'BossListScene' }); }
 
   create() {
+    const W = this.scale.width;
+    const H = this.scale.height;
+
     this.isDragging = false;
     this.moved = false;
     this.startY = 0;
     this.startMapY = 0;
 
-    this.add.image(360, 640, 'bg').setDisplaySize(720, 1280);
-    this.add.rectangle(360, 640, 720, 1280, 0x1e3799, 0.6);
+    this.add.image(W/2, H/2, 'bg').setDisplaySize(W, H);
+    this.add.rectangle(W/2, H/2, W, H, 0x1e3799, 0.6);
 
-    this.add.text(360, 60, 'КАРТА БОССОВ', { fontSize: '44px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 8 }).setOrigin(0.5);
+    this.add.text(W/2, H * 0.06, 'КАРТА БОССОВ', { fontSize: '44px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 8 }).setOrigin(0.5);
 
-    this.createCandyButton(100, 50, 140, 50, '←', 0x3498db, () => this.scene.start('HubScene'));
+    this.createCandyButton(100, H * 0.06, 140, 50, '←', 0x3498db, () => this.scene.start('HubScene'));
 
     this.mapContainer = this.add.container(0, 0);
     
     const maskShape = this.make.graphics();
-    maskShape.fillRect(0, 100, 720, 1180); 
+    maskShape.fillRect(0, H * 0.1, W, H * 0.9); 
     const mask = maskShape.createGeometryMask();
     this.mapContainer.setMask(mask);
 
-    this.renderBossMap();
-    this.setupScroll();
-    this.setupClick();
+    this.renderBossMap(W, H);
+    this.setupScroll(W, H);
+    this.setupClick(W, H);
   }
 
   createCandyButton(x, y, width, height, text, color, onClick) {
@@ -43,18 +46,21 @@ export default class BossListScene extends Phaser.Scene {
     container.on('pointerout', () => { container.y = y; });
   }
 
-  renderBossMap() {
-    const startY = 200;
+  renderBossMap(W, H) {
+    this.startMapY = H * 0.15;
     const spacingY = 220;
+    this.bossPositions = [];
 
     BOSSES.forEach((boss, index) => {
-      let x = 360;
-      if (index % 4 === 0) x = 200; 
-      if (index % 4 === 1) x = 520; 
-      if (index % 4 === 2) x = 360; 
-      if (index % 4 === 3) x = 200; 
+      let x = W/2;
+      if (index % 4 === 0) x = W * 0.3; 
+      if (index % 4 === 1) x = W * 0.7; 
+      if (index % 4 === 2) x = W * 0.5; 
+      if (index % 4 === 3) x = W * 0.3; 
 
-      const y = startY + index * spacingY;
+      const y = this.startMapY + index * spacingY;
+      this.bossPositions.push({ x, y, index });
+      
       const status = this.getBossStatus(index);
 
       let color = 0x7f8c8d; 
@@ -71,13 +77,13 @@ export default class BossListScene extends Phaser.Scene {
       const nameText = this.add.text(x, y + 105, boss.name, { fontSize: '24px', color: '#fff', stroke: '#000', strokeThickness: 5 }).setOrigin(0.5);
 
       if (index > 0) {
-        let prevX = 360;
-        if ((index - 1) % 4 === 0) prevX = 200;
-        if ((index - 1) % 4 === 1) prevX = 520;
-        if ((index - 1) % 4 === 2) prevX = 360;
-        if ((index - 1) % 4 === 3) prevX = 200;
+        let prevX = W * 0.5;
+        if ((index - 1) % 4 === 0) prevX = W * 0.3;
+        if ((index - 1) % 4 === 1) prevX = W * 0.7;
+        if ((index - 1) % 4 === 2) prevX = W * 0.5;
+        if ((index - 1) % 4 === 3) prevX = W * 0.3;
         
-        let prevY = startY + (index - 1) * spacingY;
+        let prevY = this.startMapY + (index - 1) * spacingY;
         const line = this.add.line(0, 0, prevX, prevY, x, y, 0x00f0ff, 0.6).setOrigin(0, 0).setLineWidth(6);
         this.mapContainer.add(line);
       }
@@ -94,11 +100,11 @@ export default class BossListScene extends Phaser.Scene {
     return 'locked';
   }
 
-  setupScroll() {
+  setupScroll(W, H) {
     this.input.on('pointerdown', (p) => {
-      if (p.y < 100) return;
+      if (p.y < H * 0.1) return;
       this.startY = p.y;
-      this.startMapY = this.mapContainer.y;
+      this.mapY = this.mapContainer.y;
       this.isDragging = true;
       this.moved = false;
     });
@@ -109,9 +115,9 @@ export default class BossListScene extends Phaser.Scene {
         if (Math.abs(diff) > 10) this.moved = true;
         
         if (this.moved) {
-          let newY = this.startMapY + diff;
-          const totalMapHeight = 200 + (BOSSES.length * 220);
-          let minScroll = -(totalMapHeight - 1200); 
+          let newY = this.mapY + diff;
+          const totalMapHeight = this.startMapY + (BOSSES.length * 220);
+          let minScroll = -(totalMapHeight - H * 0.9); 
           
           if (newY > 0) newY = 0;
           if (newY < minScroll) newY = minScroll;
@@ -123,26 +129,19 @@ export default class BossListScene extends Phaser.Scene {
     this.input.on('pointerup', () => { this.isDragging = false; });
   }
 
-  setupClick() {
+  setupClick(W, H) {
     this.input.on('pointerup', (p) => {
-      if (this.moved || p.y < 100) return;
+      if (this.moved || p.y < H * 0.1) return;
       let localY = p.y - this.mapContainer.y;
 
-      BOSSES.forEach((boss, index) => {
-        let x = 360;
-        if (index % 4 === 0) x = 200; 
-        if (index % 4 === 1) x = 520; 
-        if (index % 4 === 2) x = 360; 
-        if (index % 4 === 3) x = 200; 
-
-        let y = 200 + index * 220;
-        let dist = Phaser.Math.Distance.Between(p.x, localY, x, y);
+      this.bossPositions.forEach((pos) => {
+        let dist = Phaser.Math.Distance.Between(p.x, localY, pos.x, pos.y);
         
         if (dist < 75) {
-          const status = this.getBossStatus(index);
+          const status = this.getBossStatus(pos.index);
           if (status !== 'locked') {
             Effects.click(this);
-            this.time.delayedCall(100, () => this.scene.start('BossDetailScene', { bossIndex: index }));
+            this.time.delayedCall(100, () => this.scene.start('BossDetailScene', { bossIndex: pos.index }));
           } else {
             Effects.error(this);
           }
