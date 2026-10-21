@@ -17,23 +17,27 @@ body {
     margin: 0; 
     padding: 0; 
     color: white; 
-    height: 100%; 
+    width: 100vw;
+    /* 100dvh - это "динамическая" высота, она убирает полосы браузера на мобилках */
+    height: 100dvh; 
     overflow: hidden; 
     display: flex; 
     flex-direction: column; 
-    /* Ставим твой фон на весь экран */
+    
+    /* Заливаем полосы твоим фоном */
     background-image: url('assets/bg.jpg'); 
     background-size: cover; 
     background-position: center; 
     background-repeat: no-repeat; 
+    
     touch-action: manipulation;
     -webkit-touch-callout: none;
     overscroll-behavior-y: none; 
 }
 
 #game {
-    width: 100%;
-    height: 100%;
+    width: 100vw;
+    height: 100dvh;
     display: flex;
     justify-content: center;
     align-items: center;
