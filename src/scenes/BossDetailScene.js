@@ -48,46 +48,35 @@ export default class BossDetailScene extends Phaser.Scene {
     container.add([shadow, bg, highlight, txt]);
     container.setSize(width, height).setInteractive({ useHandCursor: true });
     container.on('pointerdown', () => { container.y += 5; });
-    // ИСПОЛЬЗУЕМ POINTERUP И ЗАДЕРЖКУ, ЧТОБЫ КЛИК НЕ ПРОВАЛИВАЛСЯ
-    container.on('pointerup', () => { 
-        container.y -= 5; 
-        this.time.delayedCall(50, onClick); 
-    });
+    container.on('pointerup', () => { container.y -= 5; this.time.delayedCall(50, onClick); });
     container.on('pointerout', () => { container.y = y; });
     return container;
   }
 
   createSlot(x, y, index) {
     const container = this.add.container(x, y);
-    
     const bg = this.add.circle(0, 0, 75, 0x2c3e50).setStrokeStyle(6, 0xffffff, 0.5);
     container.add(bg);
-
     const plus = this.add.text(0, 0, '+', { fontSize: '60px', color: '#7f8c8d', fontStyle: 'bold' }).setOrigin(0.5);
     container.add(plus);
-
     const zone = this.add.zone(0, 0, 150, 150).setInteractive({ useHandCursor: true });
     container.add(zone);
-
     zone.on('pointerdown', () => this.openCharSelect(index, container, bg, plus));
     this.slotContainers[index] = container;
   }
 
   openCharSelect(slotIndex, slotContainer, slotBg, plusIcon) {
     const overlay = this.add.rectangle(360, 640, 720, 1280, 0x000000, 0.9).setDepth(100).setInteractive();
-    
-    // ОКНО ВЫБОРА (уменьшили высоту до 800, чтобы влезло)
     const panel = this.add.graphics().setDepth(101).fillStyle(0x2c3e50, 1).fillRoundedRect(80, 200, 560, 800, 30).lineStyle(4, 0x3498db, 1).strokeRoundedRect(80, 200, 560, 800, 30);
     const title = this.add.text(360, 250, 'ВЫБЕРИТЕ БОЙЦА', { fontSize: '32px', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5).setDepth(102);
 
-    // КОНТЕЙНЕР ДЛЯ СПИСКА (с маской)
     const listContainer = this.add.container(0, 0).setDepth(102);
     const maskShape = this.make.graphics();
-    maskShape.fillRect(80, 300, 560, 600); // Маска для списка
+    maskShape.fillRect(80, 290, 560, 620);
     const mask = maskShape.createGeometryMask();
     listContainer.setMask(mask);
 
-    let y = 320; // Начало списка
+    let y = 320;
     const elements = [overlay, panel, title];
 
     CHARACTERS.forEach(char => {
@@ -103,60 +92,46 @@ export default class BossDetailScene extends Phaser.Scene {
       
       const avatarBg = this.add.circle(180, y + 55, 40, 0x000000);
       const avatarImg = this.add.image(180, y + 55, char.id).setDisplaySize(70, 70);
-
       const charName = this.add.text(250, y + 30, char.name, { fontSize: '26px', color: isAlreadySelected ? '#777' : '#fff', fontStyle: 'bold' });
       const charHp = this.add.text(250, y + 70, `HP: ${getCharacterMaxHp(char.id, state.level)}`, { fontSize: '20px', color: isAlreadySelected ? '#555' : '#00ff9d' });
 
       listContainer.add([btnBg, avatarBg, avatarImg, charName, charHp]);
 
       const zone = this.add.zone(360, y + 55, 480, 110).setInteractive();
-      zone.on('pointerdown', () => {
+      zone.on('pointerup', () => { // ИСПОЛЬЗУЕМ UP, ЧТОБЫ НЕ КОНФЛИКТОВАТЬ СО СВАЙПОМ
         if (isAlreadySelected) {
-            // СНЯТЬ ВЫБОР
             this.selectedChars[slotIndex] = null;
             plusIcon.setVisible(true);
             slotBg.setStrokeStyle(6, 0xffffff, 0.5);
-            // Очищаем слот от картинки (если она была)
             slotContainer.list.forEach(child => { if (child.texture) child.destroy(); });
-            this.time.delayedCall(10, () => { elements.forEach(el => el.destroy()); listContainer.destroy(); });
         } else {
-            // ВЫБРАТЬ
             this.selectedChars[slotIndex] = char.id;
             plusIcon.setVisible(false);
             slotBg.setStrokeStyle(6, 0x2ecc71); 
             const img = this.add.image(0, 0, char.id).setDisplaySize(110, 110);
             slotContainer.add(img);
-            this.time.delayedCall(10, () => { elements.forEach(el => el.destroy()); listContainer.destroy(); });
         }
+        this.time.delayedCall(10, () => { elements.forEach(el => el.destroy()); listContainer.destroy(); });
       });
       listContainer.add(zone);
 
       y += 130;
     });
 
-    // Добавляем зону скролла для контейнера
-    let startY = 0;
-    let startListY = 0;
-    let isDragging = false;
-    let moved = false;
+    // СКРОЛЛ ПОВЕШЕН НА ПАНЕЛЬ, А НЕ НА НЕВИДИМУЮ ЗОНУ
+    let startY = 0, startListY = 0, isDragging = false, moved = false;
+    
+    panel.setInteractive(new Phaser.Geom.Rectangle(80, 200, 560, 800), Phaser.Geom.Rectangle.Contains); // Делаем панель кликабельной для скролла
 
-    const scrollZone = this.add.zone(360, 600, 560, 600).setInteractive().setDepth(103); // Прозрачная зона для свайпа
-    elements.push(scrollZone);
-
-    scrollZone.on('pointerdown', (p) => {
-        startY = p.y;
-        startListY = listContainer.y;
-        isDragging = true;
-        moved = false;
+    panel.on('pointerdown', (p) => {
+        startY = p.y; startListY = listContainer.y; isDragging = true; moved = false;
     });
-
-    scrollZone.on('pointermove', (p) => {
+    panel.on('pointermove', (p) => {
         if (isDragging) {
             let diff = p.y - startY;
             if (Math.abs(diff) > 10) moved = true;
             if (moved) {
                 let newY = startListY + diff;
-                // Ограничиваем скролл
                 let minScroll = -(CHARACTERS.length * 130 - 580); 
                 if (newY > 0) newY = 0;
                 if (newY < minScroll) newY = minScroll;
@@ -164,10 +139,8 @@ export default class BossDetailScene extends Phaser.Scene {
             }
         }
     });
+    panel.on('pointerup', () => { isDragging = false; });
 
-    scrollZone.on('pointerup', () => { isDragging = false; });
-
-    // Кнопка ОТМЕНА
     const cancelBtn = this.add.text(360, 950, 'ОТМЕНА', { fontSize: '28px', color: '#e74c3c', fontStyle: 'bold', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5).setDepth(102).setInteractive();
     cancelBtn.on('pointerup', () => {
         this.time.delayedCall(10, () => { elements.forEach(el => el.destroy()); listContainer.destroy(); });
