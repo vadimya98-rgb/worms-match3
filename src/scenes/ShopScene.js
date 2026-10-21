@@ -50,7 +50,7 @@ export default class ShopScene extends Phaser.Scene {
 
   refreshContent() {
     this.container.removeAll(true);
-    this.container.y = 200; // Сброс скролла при смене вкладки
+    this.container.y = 200; 
     
     this.tabCharsBtn.setBackgroundColor(this.currentTab === 'characters' ? '#2ecc71' : '#2c3e50');
     this.tabBoostsBtn.setBackgroundColor(this.currentTab === 'boosts' ? '#2ecc71' : '#2c3e50');
@@ -133,8 +133,8 @@ export default class ShopScene extends Phaser.Scene {
       let startX = 0, startY = 0;
       btn.on('pointerdown', (p) => { startX = p.x; startY = p.y; });
       btn.on('pointerup', (p) => {
-          // Проверка на сдвиг (скролл)
-          if (Math.abs(p.x - startX) < 10 && Math.abs(p.y - startY) < 10) onClick();
+          let dist = Phaser.Math.Distance.Between(startX, startY, p.x, p.y);
+          if (dist < 15) onClick(); // Защита от срабатывания при скролле
       });
     }
     this.container.add(btn);
@@ -178,7 +178,8 @@ export default class ShopScene extends Phaser.Scene {
         let startX = 0, startY = 0;
         btn.on('pointerdown', (p) => { startX = p.x; startY = p.y; });
         btn.on('pointerup', (p) => {
-            if (Math.abs(p.x - startX) < 10 && Math.abs(p.y - startY) < 10) onClick();
+            let dist = Phaser.Math.Distance.Between(startX, startY, p.x, p.y);
+            if (dist < 15) onClick();
         });
     }
     this.container.add(btn);
