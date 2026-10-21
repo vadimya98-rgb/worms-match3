@@ -1,4 +1,3 @@
-// Импортируем все сцены игры
 import BootScene from './scenes/BootScene.js';
 import SplashScene from './scenes/SplashScene.js';
 import StarterWormScene from './scenes/StarterWormScene.js';
@@ -14,35 +13,24 @@ import AdminScene from './scenes/AdminScene.js';
 
 const config = {
   type: Phaser.AUTO,
-  // Логическое разрешение игры (в пикселях)
   width: 720,
   height: 1280,
-  backgroundColor: '#1a1a2e',
+  // Убираем backgroundColor, чтобы был виден CSS-фон
+  transparent: true, 
   parent: 'game',
   
   scale: {
-    // ВОЗВРАЩАЕМ FIT, чтобы игра влезала полностью и ничего не терялось
+    // FIT вписывает игру целиком, ничего не обрезая
     mode: Phaser.Scale.FIT, 
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
 
-  // Список всех сцен
   scene: [
-    BootScene, 
-    SplashScene, 
-    StarterWormScene, 
-    HubScene, 
-    StubScene, 
-    FarmScene,
-    ShopScene,
-    BossListScene,
-    BossDetailScene,
-    BossBattleScene,
-    DailyBonusScene,
-    AdminScene
+    BootScene, SplashScene, StarterWormScene, HubScene, StubScene, 
+    FarmScene, ShopScene, BossListScene, BossDetailScene, 
+    BossBattleScene, DailyBonusScene, AdminScene
   ],
 };
 
-// Создаем игру
 const game = new Phaser.Game(config);
 export default game;
