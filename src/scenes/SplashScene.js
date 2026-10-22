@@ -13,7 +13,7 @@ export default class SplashScene extends Phaser.Scene {
     const cx = W / 2;
     const cy = H / 2;
 
-    this.add.text(cx, cy - H * 0.15, 'Wormix-Match'', {
+    this.add.text(cx, cy - H * 0.15, 'Wormix Match', {
       fontSize: '72px', color: '#ffffff', fontStyle: 'bold', align: 'center', stroke: '#000000', strokeThickness: 6
     }).setOrigin(0.5);
 
