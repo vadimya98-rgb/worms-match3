@@ -11,7 +11,6 @@ import BossBattleScene from './scenes/BossBattleScene.js';
 import DailyBonusScene from './scenes/DailyBonusScene.js';
 import AdminScene from './scenes/AdminScene.js';
 import InfoScene from './scenes/InfoScene.js';
-import SaveLoadScene from './scenes/SaveLoadScene.js';
 import { GAME_WIDTH, GAME_HEIGHT } from './config.js';
 
 const config = {
@@ -26,14 +25,10 @@ const config = {
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
 
-  dom: {
-    createContainer: true
-  },
-
   scene: [
     BootScene, SplashScene, StarterWormScene, HubScene, StubScene,
     FarmScene, ShopScene, BossListScene, BossDetailScene,
-    BossBattleScene, DailyBonusScene, AdminScene, InfoScene, SaveLoadScene
+    BossBattleScene, DailyBonusScene, AdminScene, InfoScene
   ],
 };
 
