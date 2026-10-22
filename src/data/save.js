@@ -28,14 +28,14 @@ export const Save = {
 
   getMedkits() { return this.data.player.medkits; },
   addMedkits(n) { this.data.player.medkits += n; this.flush(); },
-  
+
   getAntitoxins() { return this.data.player.antitoxins; },
   addAntitoxins(n) { this.data.player.antitoxins += n; this.flush(); },
 
-  getCharacter(id) { 
-      const c = this.data.player.characters[id];
-      if (!c) return { owned: false, level: 0, armorLevel: 0 };
-      return { owned: c.owned, level: c.level, armorLevel: c.armorLevel || 0 };
+  getCharacter(id) {
+    const c = this.data.player.characters[id];
+    if (!c) return { owned: false, level: 0, armorLevel: 0 };
+    return { owned: c.owned, level: c.level, armorLevel: c.armorLevel || 0 };
   },
   ownCharacter(id) { this.data.player.characters[id] = { owned: true, level: 1, armorLevel: 0 }; this.flush(); },
   upgradeCharacter(id) {
@@ -49,4 +49,45 @@ export const Save = {
     c.armorLevel = (c.armorLevel || 0) + 1; this.flush(); return true;
   },
   isDragonOwned() { return this.getCharacter('dragon').owned; },
+
+  exportCode() {
+    try {
+      const json = JSON.stringify(this.data);
+      const bytes = new TextEncoder().encode(json);
+      const binString = Array.from(bytes, (b) => String.fromCharCode(b)).join('');
+      const b64 = btoa(binString);
+      return 'WORMIX1:' + b64;
+    } catch (e) {
+      return null;
+    }
+  },
+
+  importCode(code) {
+    try {
+      code = (code || '').trim();
+      if (!code.startsWith('WORMIX1:')) {
+        return { ok: false, error: 'Неверный формат кода' };
+      }
+      const b64 = code.substring(8);
+      const binString = atob(b64);
+      const bytes = Uint8Array.from(binString, (c) => c.charCodeAt(0));
+      const json = new TextDecoder().decode(bytes);
+      const parsed = JSON.parse(json);
+
+      if (!parsed || !parsed.player || !parsed.player.characters) {
+        return { ok: false, error: 'Повреждённый код' };
+      }
+
+      if (parsed.player.antitoxins === undefined) parsed.player.antitoxins = 0;
+      if (parsed.player.dailyStreak === undefined) parsed.player.dailyStreak = 0;
+      if (parsed.player.lastDailyBonusDay === undefined) parsed.player.lastDailyBonusDay = null;
+      if (!parsed.bosses) parsed.bosses = {};
+
+      this.data = parsed;
+      this.flush();
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: 'Не удалось прочитать код' };
+    }
+  },
 };
