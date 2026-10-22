@@ -31,16 +31,17 @@ export default class HubScene extends Phaser.Scene {
     // Разделитель
     this.add.graphics().fillStyle(0xffffff, 0.5).fillRect(W/2 - 160, H * 0.56, 320, 2);
 
-    // Магазин и бонус (растянуты вниз)
-    this.createCandyButton(W/2, H * 0.66, 360, 80, 'МАГАЗИН', 0x9b59b6, '🛒', () => this.scene.start('ShopScene'));
-    this.createCandyButton(W/2, H * 0.80, 360, 80, 'БОНУС', 0xf1c40f, '🎁', () => this.scene.start('DailyBonusScene'));
+    // Магазин, Информация и Бонус (перекомпонованы, чтобы поместилась новая кнопка)
+    this.createCandyButton(W/2, H * 0.63, 360, 80, 'МАГАЗИН', 0x9b59b6, '🛒', () => this.scene.start('ShopScene'));
+    this.createCandyButton(W/2, H * 0.75, 360, 80, 'ИНФОРМАЦИЯ', 0x3498db, 'ℹ️', () => this.scene.start('InfoScene'));
+    this.createCandyButton(W/2, H * 0.87, 360, 80, 'БОНУС', 0xf1c40f, '🎁', () => this.scene.start('DailyBonusScene'));
   }
 
   createTopPanel(W, H) {
     // Панель привязана к правому верхнему углу (W - 280)
     const x = W - 280, w = 260, h = 60;
     const startY = H * 0.03;
-    
+
     // Фузы
     this.add.graphics().fillStyle(0xffffff, 0.15).fillRoundedRect(x, startY, w, h, 20).lineStyle(3, 0xffffff, 0.5).strokeRoundedRect(x, startY, w, h, 20);
     this.add.image(x + 40, startY + 30, 'icon_fuz').setDisplaySize(35, 35);
