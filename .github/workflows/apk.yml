@@ -35,27 +35,35 @@ jobs:
           curl -L -o www/libs/phaser.min.js https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js
           sed -i 's|https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js|libs/phaser.min.js|' www/index.html
 
-      - name: Create Capacitor Config
-        run: |
-          cat <<EOF > capacitor.config.json
-          {
-            "appId": "com.adimya98.wormiks",
-            "appName": "Wormiks",
-            "webDir": "www"
-          }
-          EOF
+      # ⚠️ ШАГ "Create Capacitor Config" УДАЛЁН — теперь используется файл из репозитория
 
       - name: Add Android Platform
         run: npx cap add android
 
       - name: Generate App Icons
         run: |
-          echo "Проверка папки resources:"
-          ls -la resources/ || echo "Папка resources не найдена!"
-          npx @capacitor/assets generate --android --iconBackgroundColor '#1a1a2e' --iconBackgroundColorDark '#1a1a2e'
+          echo "=== resources/ ==="
+          ls -la resources/ || echo "❌ resources/ не найдена"
+          echo "=== assets/ (игровые) ==="
+          ls -la assets/ | head -20
+          npx @capacitor/assets generate --android \
+            --assetPath resources \
+            --iconBackgroundColor '#1a1a2e' \
+            --iconBackgroundColorDark '#1a1a2e'
 
       - name: Sync Capacitor
         run: npx cap sync android
+
+      - name: Verify Config and Icons
+        run: |
+          echo "=== capacitor.config.json ==="
+          cat capacitor.config.json
+          echo ""
+          echo "=== strings.xml (имя приложения) ==="
+          cat android/app/src/main/res/values/strings.xml
+          echo ""
+          echo "=== mipmap-xxxhdpi (иконка) ==="
+          ls -la android/app/src/main/res/mipmap-xxxhdpi/ || echo "❌ mipmap не найдены"
 
       - name: Build Debug APK
         run: |
