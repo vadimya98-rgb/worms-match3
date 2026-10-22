@@ -1,5 +1,6 @@
 import { WEAPONS } from '../data/weapons.js';
 import { Effects } from '../utils/effects.js';
+import { CHANGELOG } from '../version.js';
 
 export default class InfoScene extends Phaser.Scene {
   constructor() { super({ key: 'InfoScene' }); }
@@ -24,7 +25,6 @@ export default class InfoScene extends Phaser.Scene {
       fontSize: '36px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 6
     }).setOrigin(0.5);
 
-    // --- Вкладки ---
     this.tabWeaponsBtn = this.add.text(cx - 140, H * 0.17, 'ОРУЖИЕ', {
       fontSize: '22px', color: '#fff', backgroundColor: '#2ecc71',
       padding: { x: 18, y: 8 }, stroke: '#000', strokeThickness: 3
@@ -62,8 +62,7 @@ export default class InfoScene extends Phaser.Scene {
     this.tabWeaponsBtn.setBackgroundColor(tab === 'weapons' ? '#2ecc71' : '#2c3e50');
     this.tabOtherBtn.setBackgroundColor(tab === 'other' ? '#2ecc71' : '#2c3e50');
 
-    // Очистка предыдущей вкладки
-    this.contentElements.forEach(el => el.destroy());
+    this.contentElements.forEach((el) => el.destroy());
     this.contentElements = [];
     if (this.scrollListeners) {
       this.input.off('pointerdown', this.scrollListeners.down);
@@ -100,26 +99,22 @@ export default class InfoScene extends Phaser.Scene {
 
     let y = listTop + 10;
 
-    WEAPONS.forEach(w => {
-      // Рамка оружия
+    WEAPONS.forEach((w) => {
       const rowBg = this.add.graphics()
         .fillStyle(0x2c3e50, 0.9).fillRoundedRect(cx - 280, y, 560, itemH, 18)
         .lineStyle(3, 0x00ff9d, 1).strokeRoundedRect(cx - 280, y, 560, itemH, 18);
       listContainer.add(rowBg);
 
-      // Иконка оружия слева
       const iconBg = this.add.circle(cx - 230, y + itemH / 2, 36, 0x000000);
       listContainer.add(iconBg);
       const icon = this.add.image(cx - 230, y + itemH / 2, 'weapon' + w.id).setDisplaySize(60, 60);
       listContainer.add(icon);
 
-      // Название — урон
       const nameTxt = this.add.text(cx - 170, y + itemH / 2, `${w.name} — ${w.damage} урона`, {
         fontSize: '24px', color: '#fff', fontStyle: 'bold', stroke: '#000', strokeThickness: 3
       }).setOrigin(0, 0.5);
       listContainer.add(nameTxt);
 
-      // Доп. свойства (пробитие / заморозка)
       const extras = [];
       if (w.armorPierce > 0) extras.push(`пробитие ${w.armorPierce}`);
       if (w.stun) extras.push('заморозка');
@@ -133,7 +128,6 @@ export default class InfoScene extends Phaser.Scene {
       y += step;
     });
 
-    // --- Примечание (яркий блок) ---
     const noteH = 190;
     const noteBg = this.add.graphics()
       .fillStyle(0xd35400, 0.95).fillRoundedRect(cx - 280, y + 10, 560, noteH, 18)
@@ -156,7 +150,6 @@ export default class InfoScene extends Phaser.Scene {
     const contentHeight = y - listTop;
     const maxScroll = Math.max(0, contentHeight - viewportH);
 
-    // Подсказка о прокрутке
     if (maxScroll > 0) {
       const hint = this.add.text(cx, listBottom + 12, '↓ Прокрутите вниз, чтобы увидеть больше ↓', {
         fontSize: '16px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 3
@@ -164,7 +157,76 @@ export default class InfoScene extends Phaser.Scene {
       this.contentElements.push(hint);
     }
 
-    // --- Скролл: свайп + колесо ---
+    this.attachScroll(listContainer, listTop, listBottom, maxScroll);
+  }
+
+  buildOtherTab() {
+    const W = this.scale.width;
+    const H = this.scale.height;
+    const cx = W / 2;
+
+    const listTop = H * 0.24;
+    const listBottom = H * 0.9;
+    const viewportH = listBottom - listTop;
+
+    const listContainer = this.add.container(0, 0);
+    this.contentElements.push(listContainer);
+
+    const maskShape = this.make.graphics();
+    maskShape.fillStyle(0xffffff);
+    maskShape.fillRect(0, listTop, W, viewportH);
+    listContainer.setMask(maskShape.createGeometryMask());
+
+    let y = listTop + 10;
+
+    CHANGELOG.forEach((release) => {
+      const header = this.add.text(cx, y + 15, `Обновление v${release.version}`, {
+        fontSize: '28px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 5
+      }).setOrigin(0.5, 0);
+      listContainer.add(header);
+      y += 55;
+
+      const date = this.add.text(cx, y, release.date, {
+        fontSize: '14px', color: '#aaa', fontStyle: 'italic', stroke: '#000', strokeThickness: 2
+      }).setOrigin(0.5, 0);
+      listContainer.add(date);
+      y += 30;
+
+      release.sections.forEach((section) => {
+        const secTitle = this.add.text(cx - 280, y, section.title, {
+          fontSize: '20px', color: '#3498db', fontStyle: 'bold', stroke: '#000', strokeThickness: 3
+        }).setOrigin(0, 0);
+        listContainer.add(secTitle);
+        y += 32;
+
+        section.items.forEach((item) => {
+          const itemTxt = this.add.text(cx - 260, y, '•  ' + item, {
+            fontSize: '16px', color: '#fff', wordWrap: { width: 520 },
+            stroke: '#000', strokeThickness: 2
+          }).setOrigin(0, 0);
+          listContainer.add(itemTxt);
+          y += itemTxt.height + 8;
+        });
+        y += 15;
+      });
+
+      y += 25;
+    });
+
+    const contentHeight = y - listTop;
+    const maxScroll = Math.max(0, contentHeight - viewportH);
+
+    if (maxScroll > 0) {
+      const hint = this.add.text(cx, listBottom + 12, '↓ Прокрутите вниз ↓', {
+        fontSize: '16px', color: '#f1c40f', fontStyle: 'bold', stroke: '#000', strokeThickness: 3
+      }).setOrigin(0.5);
+      this.contentElements.push(hint);
+    }
+
+    this.attachScroll(listContainer, listTop, listBottom, maxScroll);
+  }
+
+  attachScroll(listContainer, listTop, listBottom, maxScroll) {
     let scrollY = 0;
     const updateScroll = (newY) => {
       scrollY = Phaser.Math.Clamp(newY, 0, maxScroll);
@@ -188,23 +250,6 @@ export default class InfoScene extends Phaser.Scene {
     this.input.on('pointerup', up);
     this.input.on('wheel', wheel);
 
-    this.scrollListeners = { down, move, up, wheel };
-  }
-
-  buildOtherTab() {
-    const W = this.scale.width;
-    const H = this.scale.height;
-    const cx = W / 2;
-
-    const bg = this.add.graphics()
-      .fillStyle(0x2c3e50, 0.9).fillRoundedRect(cx - 280, H * 0.35, 560, H * 0.3, 20)
-      .lineStyle(3, 0x3498db, 1).strokeRoundedRect(cx - 280, H * 0.35, 560, H * 0.3, 20);
-    this.contentElements.push(bg);
-
-    const txt = this.add.text(cx, H * 0.5, 'Тут будет информация,\nчуть позже...', {
-      fontSize: '28px', color: '#fff', align: 'center', fontStyle: 'italic',
-      stroke: '#000', strokeThickness: 4
-    }).setOrigin(0.5);
-    this.contentElements.push(txt);
+    this.scrollListeners = { down, up, move, wheel };
   }
 }
