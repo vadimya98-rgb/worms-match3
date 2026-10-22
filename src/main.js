@@ -11,13 +11,14 @@ import BossBattleScene from './scenes/BossBattleScene.js';
 import DailyBonusScene from './scenes/DailyBonusScene.js';
 import AdminScene from './scenes/AdminScene.js';
 import InfoScene from './scenes/InfoScene.js';
-import { GAME_WIDTH, GAME_HEIGHT } from './config.js'; // Импортируем размеры
+import SaveLoadScene from './scenes/SaveLoadScene.js';
+import { GAME_WIDTH, GAME_HEIGHT } from './config.js';
 
 const config = {
   type: Phaser.AUTO,
   width: GAME_WIDTH,
-  height: GAME_HEIGHT, // Высота теперь динамическая!
-  transparent: true, // Фон прозрачный (виден CSS фон)
+  height: GAME_HEIGHT,
+  transparent: true,
   parent: 'game',
 
   scale: {
@@ -25,10 +26,14 @@ const config = {
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
 
+  dom: {
+    createContainer: true
+  },
+
   scene: [
     BootScene, SplashScene, StarterWormScene, HubScene, StubScene,
     FarmScene, ShopScene, BossListScene, BossDetailScene,
-    BossBattleScene, DailyBonusScene, AdminScene, InfoScene
+    BossBattleScene, DailyBonusScene, AdminScene, InfoScene, SaveLoadScene
   ],
 };
 
