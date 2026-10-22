@@ -1,6 +1,6 @@
 {
   "appId": "com.adimya98.wormiks",
-  "appName": "Wormiks",
+  "appName": "Wormix Match",
   "webDir": "www",
   "android": {
     "allowMixedContent": true
