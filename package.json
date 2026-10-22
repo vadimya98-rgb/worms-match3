@@ -1,7 +1,7 @@
 {
-  "name": "wormiks",
+  "name": "wormix-match",
   "version": "1.0.0",
-  "description": "Worms Match-3",
+  "description": "Wormix Match - Match с боссами",
   "author": "adimya98-rgb",
   "license": "MIT",
   "dependencies": {
