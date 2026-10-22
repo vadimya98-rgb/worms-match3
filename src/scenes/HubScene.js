@@ -29,28 +29,10 @@ export default class HubScene extends Phaser.Scene {
     this.createCandyButton(W/2, H * 0.75, 360, 80, 'ИНФОРМАЦИЯ', 0x3498db, 'ℹ️', () => this.scene.start('InfoScene'));
     this.createCandyButton(W/2, H * 0.87, 360, 80, 'БОНУС', 0xf1c40f, '🎁', () => this.scene.start('DailyBonusScene'));
 
-    this.createSaveLoadButton(80, H * 0.04);
-
     this.add.text(15, H - 15, `v${VERSION}`, {
       fontSize: '14px', color: '#cccccc', fontStyle: 'bold',
       stroke: '#000', strokeThickness: 2
     }).setOrigin(0, 1).setDepth(1000);
-  }
-
-  createSaveLoadButton(x, y) {
-    const btn = this.add.container(x, y).setDepth(1000);
-    const bg = this.add.graphics().fillStyle(0x3498db, 1).fillRoundedRect(-40, -28, 80, 56, 15)
-      .lineStyle(3, 0xffffff, 0.6).strokeRoundedRect(-40, -28, 80, 56, 15);
-    const icon = this.add.text(0, 0, '💾', { fontSize: '32px' }).setOrigin(0.5);
-    btn.add([bg, icon]);
-    btn.setSize(80, 56).setInteractive({ useHandCursor: true });
-    btn.on('pointerdown', () => { btn.y += 4; });
-    btn.on('pointerup', () => {
-      btn.y -= 4;
-      Effects.click(this);
-      this.scene.start('SaveLoadScene');
-    });
-    btn.on('pointerout', () => { btn.y = y; });
   }
 
   createTopPanel(W, H) {
