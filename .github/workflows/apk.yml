@@ -35,8 +35,6 @@ jobs:
           curl -L -o www/libs/phaser.min.js https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js
           sed -i 's|https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js|libs/phaser.min.js|' www/index.html
 
-      # ⚠️ ШАГ "Create Capacitor Config" УДАЛЁН — теперь используется файл из репозитория
-
       - name: Add Android Platform
         run: npx cap add android
 
@@ -44,8 +42,6 @@ jobs:
         run: |
           echo "=== resources/ ==="
           ls -la resources/ || echo "❌ resources/ не найдена"
-          echo "=== assets/ (игровые) ==="
-          ls -la assets/ | head -20
           npx @capacitor/assets generate --android \
             --assetPath resources \
             --iconBackgroundColor '#1a1a2e' \
@@ -54,25 +50,80 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync android
 
-      - name: Verify Config and Icons
-        run: |
-          echo "=== capacitor.config.json ==="
-          cat capacitor.config.json
-          echo ""
-          echo "=== strings.xml (имя приложения) ==="
-          cat android/app/src/main/res/values/strings.xml
-          echo ""
-          echo "=== mipmap-xxxhdpi (иконка) ==="
-          ls -la android/app/src/main/res/mipmap-xxxhdpi/ || echo "❌ mipmap не найдены"
+      # ═══════════ ПОСТОЯННЫЙ KEYSTORE ═══════════
+      - name: Restore Keystore from Cache
+        uses: actions/cache@v4
+        id: keystore-cache
+        with:
+          path: .keystore
+          key: wormix-keystore-v1
 
-      - name: Build Debug APK
+      - name: Generate Keystore if Missing
+        if: steps.keystore-cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p .keystore
+          keytool -genkeypair -v \
+            -keystore .keystore/release.keystore \
+            -alias wormix-key \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -storepass 'WormixMatch2026!' \
+            -keypass 'WormixMatch2026!' \
+            -dname "CN=Wormix Match, OU=Game, O=Indie, L=Moscow, S=Moscow, C=RU"
+
+      - name: Setup Signing Config
+        run: |
+          cp .keystore/release.keystore android/app/release.keystore
+          python3 << 'PYEOF'
+          import re
+          p = 'android/app/build.gradle'
+          s = open(p).read()
+
+          signing_block = '''
+              signingConfigs {
+                  release {
+                      storeFile file('release.keystore')
+                      storePassword 'WormixMatch2026!'
+                      keyAlias 'wormix-key'
+                      keyPassword 'WormixMatch2026!'
+                  }
+              }
+          '''
+
+          s = s.replace('android {', 'android {\n' + signing_block, 1)
+
+          s = re.sub(
+              r'(buildTypes\s*\{[^}]*?release\s*\{)',
+              r'\1\n            signingConfig signingConfigs.release',
+              s,
+              count=1
+          )
+
+          open(p, 'w').write(s)
+          print('✅ build.gradle пропатчен')
+          PYEOF
+
+      - name: Build Signed Release APK
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleRelease
+
+      - name: Verify Signature
+        run: |
+          echo "=== Проверка подписи APK ==="
+          keytool -printcert -jarfile android/app/build/outputs/apk/release/app-release.apk 2>&1 | head -20
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: WormsMatch3-APK
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          path: android/app/build/outputs/apk/release/app-release.apk
+
+      - name: Upload Keystore (BACKUP)
+        uses: actions/upload-artifact@v4
+        with:
+          name: wormix-keystore-backup
+          path: .keystore/release.keystore
+          retention-days: 90
